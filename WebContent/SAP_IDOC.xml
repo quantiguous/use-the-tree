@@ -1,0 +1,95 @@
+<IDOC>
+	<SalesOrders>
+		<SalesOrdersId>1</SalesOrdersId>
+		<SaleOrder>
+			<CustomerId>CustomerId1</CustomerId>
+			<CustomerName>Martin Mc Fly</CustomerName>
+			<OrderNumber>OrderNumber1</OrderNumber>
+			<ShipToAddress>
+				<Country>DE</Country>
+				<Road>Am Bahnhof 1</Road>
+			</ShipToAddress>
+			<BillingAddress>
+				<Country>DE2</Country>
+				<Road>Am Bahnhof 2</Road>
+			</BillingAddress>
+			<Position>	
+				<itemNumber>1</itemNumber>
+				<positionName>skin lotion extra soft</positionName>
+				<SubPosition>
+					<batch>A1</batch>
+					<qty>100</qty>
+				</SubPosition>
+				<SubPosition>
+					<batch>A2</batch>
+					<qty>200</qty>
+				</SubPosition>
+				<SubPosition>		
+					<batch>A3</batch>	
+					<qty>300</qty>
+				</SubPosition>				
+			</Position>
+			<Position>	
+				<itemNumber>2</itemNumber>
+				<positionName>skin lotion soft</positionName>
+				<SubPosition>
+					<batch>B1</batch>
+					<qty>10</qty>
+				</SubPosition>
+				<SubPosition>
+					<batch>B2</batch>
+					<qty>20</qty>
+				</SubPosition>
+				<SubPosition>	
+					<batch>B3</batch>			
+					<qty>30</qty>
+				</SubPosition>				
+			</Position>
+		</SaleOrder>
+		<SaleOrder>
+			<CustomerId>CustomerId2</CustomerId>
+			<CustomerName>John</CustomerName>
+			<OrderNumber>OrderNumber2</OrderNumber>
+			<ShipToAddress>
+				<Country>DE</Country>
+				<Road>Am Bahnhof 3</Road>
+			</ShipToAddress>
+			<BillingAddress>
+				<Country>DE2</Country>
+				<Road>Am Bahnhof 4</Road>
+			</BillingAddress>
+			<Position>	
+				<itemNumber>1</itemNumber>
+				<positionName>skin lotion extra soft</positionName>
+				<SubPosition>
+					<batch>C</batch>
+					<qty>1</qty>
+				</SubPosition>
+				<SubPosition>
+					<batch>D</batch>
+					<qty>2</qty>
+				</SubPosition>
+				<SubPosition>
+					<batch>E</batch>				
+					<qty>3</qty>
+				</SubPosition>				
+			</Position>
+			<Position>	
+				<itemNumber>2</itemNumber>
+				<positionName>skin lotion</positionName>
+				<SubPosition>
+					<batch>A</batch>
+					<qty>3</qty>
+				</SubPosition>
+				<SubPosition>
+					<batch>B</batch>
+					<qty>6</qty>
+				</SubPosition>
+				<SubPosition>
+					<batch>C</batch>				
+					<qty>9</qty>
+				</SubPosition>				
+			</Position>
+		</SaleOrder>
+	</SalesOrders>
+</IDOC>
