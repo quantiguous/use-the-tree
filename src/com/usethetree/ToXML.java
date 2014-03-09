@@ -68,7 +68,7 @@ public class ToXML extends HttpServlet {
             String[] prevHeader = null;
             String[] curHeader = null;
             int curDepth = 0;
-			boolean hasChanged=false;
+            boolean hasChanged=false;
             
             InputStream in = null;
            
