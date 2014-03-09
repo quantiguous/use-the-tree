@@ -1,7 +1,7 @@
 use-the-tree
 ============
 
-Fast, scalable and reliable message transformations - ONLINE (at www.usethetree.com)
+Fast, scalable and reliable message transformations - for free (e.g. at www.usethetree.com)
 
 
 ## Wiki
