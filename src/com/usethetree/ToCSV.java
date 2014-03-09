@@ -39,7 +39,7 @@ public class ToCSV extends HttpServlet {
         
         if ((contentType != null) && (contentType.indexOf("multipart/form-data") >= 0)) {       
 
-        	String filename = "xml";
+            String filename = "csv";
             Part filePart = null;
             try {
                 filePart = request.getPart("file");
