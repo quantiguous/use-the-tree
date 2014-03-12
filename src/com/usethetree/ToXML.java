@@ -45,13 +45,13 @@ public class ToXML extends HttpServlet {
                 filePart = request.getPart("file");
                 filename = getFileName(filePart);
             } catch (IOException e1) {
-                returnMessage(request, response, "errorText", e1.getMessage());
+                returnMsg(request, response, "errorText", e1.getMessage());
             } catch (ServletException e) {
-                returnMessage(request, response, "errorText", e.getLocalizedMessage());
+                returnMsg(request, response, "errorText", e.getLocalizedMessage());
             }
             
             if (filename.isEmpty()) {
-            	 returnMessage(request, response, "errorText", "No filename found. Did you select a file?");
+            	 returnMsg(request, response, "errorText", "No filename found. Did you select a file?");
             }
             
             String encoding = request.getParameter("encoding");
@@ -75,7 +75,7 @@ public class ToXML extends HttpServlet {
             try {     
                  in = filePart.getInputStream();
             } catch (IOException e) {
-                  returnMessage(request, response, "errorText", e.getMessage());
+                  returnMsg(request, response, "errorText", e.getMessage());
             }
             
             Scanner scanner = new Scanner(in, encoding);
@@ -86,7 +86,7 @@ public class ToXML extends HttpServlet {
             if (scanner.hasNext())
                 header = scanner.next();
             else
-            	returnMessage(request, response, "errorText", "No line found. Did you send an empty file?" );
+            	returnMsg(request, response, "errorText", "No line found. Did you send an empty file?" );
 
 			headers = header.split(valueSeparator);
 			for ( String h : headers ) {
@@ -161,9 +161,9 @@ public class ToXML extends HttpServlet {
 				writer.close();
 
 			} catch (IOException e) {
-				returnMessage(request, response, "errorText", e.getMessage());
+				returnMsg(request, response, "errorText", e.getMessage());
 			} catch (XMLStreamException e1) {
-				 returnMessage(request, response, "errorText", e1.getMessage());
+				 returnMsg(request, response, "errorText", e1.getMessage());
 			}
 	        
         }
@@ -171,16 +171,16 @@ public class ToXML extends HttpServlet {
     }
 
     
-    private void returnMessage(HttpServletRequest request, HttpServletResponse response, String attributeName, String message) {
+    private void returnMsg(HttpServletRequest request, HttpServletResponse response, String attributeName, String msg) {
 
-        request.setAttribute(attributeName, message);
+        request.setAttribute(attributeName, msg);
         RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
         try {
            requestDispatcher.forward(request, response);
         } catch (IOException e) {
-        	ReturnMsg.appendReturnMsg(response, "red", message + "<br/><br/>" + e.getMessage());
+        	ReturnMsg.appendReturnMsg(response, "red", msg + "<br/><br/>" + e.getMessage());
         } catch (ServletException e) {
-        	ReturnMsg.appendReturnMsg(response, "red", message + "<br/><br/>" + e.getMessage());
+        	ReturnMsg.appendReturnMsg(response, "red", msg + "<br/><br/>" + e.getMessage());
         }
     }
        

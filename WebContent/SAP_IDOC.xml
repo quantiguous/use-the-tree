@@ -1,7 +1,7 @@
 <IDOC>
 	<SalesOrders>
 		<SalesOrdersId>1</SalesOrdersId>
-		<SaleOrder>
+		<SalesOrder>
 			<CustomerId>CustomerId1</CustomerId>
 			<CustomerName>Martin Mc Fly</CustomerName>
 			<OrderNumber>OrderNumber1</OrderNumber>
@@ -25,7 +25,7 @@
 					<qty>200</qty>
 				</SubPosition>
 				<SubPosition>		
-					<batch>A3</batch>	
+					<batch>A1</batch>	
 					<qty>300</qty>
 				</SubPosition>				
 			</Position>
@@ -45,8 +45,8 @@
 					<qty>30</qty>
 				</SubPosition>				
 			</Position>
-		</SaleOrder>
-		<SaleOrder>
+		</SalesOrder>
+		<SalesOrder>
 			<CustomerId>CustomerId2</CustomerId>
 			<CustomerName>John</CustomerName>
 			<OrderNumber>OrderNumber2</OrderNumber>
@@ -90,6 +90,6 @@
 					<qty>9</qty>
 				</SubPosition>				
 			</Position>
-		</SaleOrder>
+		</SalesOrder>
 	</SalesOrders>
 </IDOC>

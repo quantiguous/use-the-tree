@@ -10,7 +10,10 @@ import="com.usethetree.ReturnMsg" %>
 
 <h1>Welcome to UseTheTree.com</h1>
 
-<a href="https://github.com/mqsiuser/use-the-tree/wiki">This project</a> wants to provide fast, scalable and reliable message transformations. 
+<a href="https://github.com/mqsiuser/use-the-tree/wiki">This project</a> wants to provide fast, scalable and reliable message transformations. <br/>
+<br/>
+<font color="red">---------- currently under development! ----------</font>
+<br/>
 
 <h2>Tree -&gt; flatfile (Status: Early preview)</h3>
 <form action="ToCSV" enctype="multipart/form-data" method="POST" >
@@ -45,7 +48,18 @@ import="com.usethetree.ReturnMsg" %>
 <% ReturnMsg.printReturnMsg(request, response); %>
 <br/>
 <br/>
-<h2>Tree -&gt; tree (Status: Not started yet)</h2>
+<h2>Tree -&gt; tree (Status: Very early preview)</h2>
+<br/>
+<form action="XMLToXML" enctype="multipart/form-data" method="POST" >
+    <br/>
+    File: <input type="file" name="file" value="" size="10" title=""><br/>
+    Group  by: <input type="text" name="groupBy" value="batch" size="8" title="groupBy"> (e.g. batch, itemNumber, orderNumber, customerID)<br/>
+    <br/>
+    <input type="submit" name="submit" value="XML -> XML"><br/>
+
+</form>
+<br/>
+<% ReturnMsg.printReturnMsg(request, response); %>
 <br/>
 <br/>
 <br/>
