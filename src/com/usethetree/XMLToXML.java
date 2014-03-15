@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Stack;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -21,6 +23,9 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
+
+import sun.rmi.runtime.NewThreadAction;
+
 
 
 
@@ -58,9 +63,8 @@ public class XMLToXML extends HttpServlet {
             	 returnMsg(request, response, "errorText", "No filename found. Did you select a file?");
             }
             
-            String groupBy = request.getParameter("groupBy");
-
-
+            String cmds = request.getParameter("cmds");
+            
             InputStream in = null;
 			try {
 				in = filePart.getInputStream();
@@ -83,8 +87,9 @@ public class XMLToXML extends HttpServlet {
         	
         	String curElem = "";
         	String curValue = "";
-        	Tree root = null;
-        	Tree curTree = null;
+        	Tree inRoot = new Tree("InRoot");
+        	Tree outRoot = new Tree("OutRoot");
+        	Tree curTree = inRoot;
         	boolean lastTagWasAnOpeningTag = false;
         	
 	        try {
@@ -96,8 +101,8 @@ public class XMLToXML extends HttpServlet {
 				        case XMLStreamConstants.START_ELEMENT:				        	
 				        	curElem = xmlStreamReader.getLocalName();
 				        	if (curTree==null) {
-				        		root = new Tree(curElem);
-				        		curTree = root;
+				        		inRoot = new Tree(curElem);
+				        		curTree = inRoot;
 				        	} else {
 				        		curTree = curTree.addLeaf(curElem);
 				        	}
@@ -138,8 +143,159 @@ public class XMLToXML extends HttpServlet {
 			} catch (XMLStreamException e) {
 				returnMsg(request, response, "errorText", e.getMessage());
 			}
+    	
+            HashMap<String, Tree> references = new HashMap<String, Tree>();
+            Stack<Integer> whiles = new Stack<Integer>();
+         
+            String[] commands = cmds.split("\r\n");
+            String[] command = null;
+            boolean doLoop=false;
+            
+            int curTabCount = 0;
+            int prevTabCount = 0;
+            
+            for (int i=0; i<commands.length; i++) {
+            	String c = commands[i];
+            	String c2 = c.replace("\t", "");
+            	prevTabCount = curTabCount;
+            	curTabCount = c.length()-c2.length();
+            		
+            	command = c2.split(" ");
+            	
+            	int tabDifference = prevTabCount - curTabCount;
+            	doLoop=true;
+            	int j = 1;
+            	while (j<=tabDifference&&doLoop&&whiles.size()>=prevTabCount) {
+            		i = whiles.pop();          		       		
+            		c = commands[i];
+                	c2 = c.replace("\t", "");
+                	prevTabCount = curTabCount;
+                	curTabCount = c.length()-c2.length();
+                	command = c2.split(" ");
+            		if (command[2].equals("IS")&&command[3].equals("NOT")&&command[4].equals("NULL")) {
+            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
+            			if (tmp!=null) {
+            				whiles.add(i);
+            				doLoop=false;
+            			}
+            		}
+            		j++;
+            		i++;          		       		
+            		c = commands[i];
+                	c2 = c.replace("\t", "");
+                	prevTabCount = curTabCount;
+                	curTabCount = c.length()-c2.length();
+                	command = c2.split(" ");
+            	}
+            	
+            	if (whiles.size()>=curTabCount) {		// only execute commands that have an "active" WHILE
+            	
+	            	if (command[0].equals("REF")) {
+	            		
+	            		String[] keyValue = command[1].split("=");
+	            		String key = keyValue[0];
+	            		String value = keyValue[1];
+	            		
+	            		String[] reference = value.split("\\.");
+	            		
+	            		Tree tmp = null;
+	            		
+	            		int l = 0;
+            			if (references.containsKey(reference[0])) {
+            				tmp = references.get(reference[0]);
+            				l=1;
+            			} else if (key.startsWith("in"))
+	            			tmp = inRoot;
+	            		else
+	            			tmp = outRoot;
+            			
+            			String s = null;
+	            		for (int k=l;k<reference.length;k++) {
+	            			s = reference[k];
+	            			Tree tmp2 = tmp.firstChild(s);
+	            			if (tmp2==null) {
+	            				tmp = tmp.addLeaf(s);
+	            			} else {
+	            				tmp=tmp2;
+	            			}
+	            			
+	            		}
+	            		references.put(key, tmp);
+	            		
+	            	} else if (command[0].equals("MOVE")) {
+	            		if (command[2].equals("NEXT")&&command[3].equals("SIBLING")) {
+	            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
+	            			if (tmp!=null)
+	            				if (command[1].startsWith("in"))
+	            					tmp = tmp.nextSibling;
+			            		else {
+			            			Tree tmp2 = tmp.nextSibling;
+			            			if (tmp2==null) {
+			            				tmp = tmp.addNextSibling(tmp.elemName);
+			            			} else {
+			            				tmp=tmp2;
+			            			}
+			            			
+			            		}
+	            			
+	            			references.put(command[1], tmp);
+	            		}
+	            		
+	            		
+	            	} else if (command[0].equals("WHILE")) {
+	            		if (command[2].equals("IS")&&command[3].equals("NOT")&&command[4].equals("NULL")) {
+	            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
+	            			if (tmp!=null)
+	            				whiles.add(i);
+	            		}
+	            		
+	            	} else if (command[0].equals("RETURN")) {
+	            		
+	            		// finished.
+	            		
+	            	} else {   // an assignment
+            	
+	            		String[] keyValue = command[0].split("=");
+	            		String[] keys = keyValue[0].split("\\.");
+	            		String[] values = keyValue[1].split("\\.");;
+	            		
+	            		Tree tmpOut = null;
+	            		for (String key:keys) {
+		         			if (references.containsKey(key)) {
+	            				tmpOut = references.get(key);
+	            			} else {
+		            			Tree tmp2 = tmpOut.firstChild(key);
+		            			if (tmp2==null) {
+		            				tmpOut = tmpOut.addLeaf(key);
+		            			} else {
+		            				tmpOut=tmp2;
+		            			}	            			
+	            			}			
+	            		}
+	            		
+	            		Tree tmpIn = null;
+	            		for (String value:values) {
+		         			if (references.containsKey(value)) {
+		         				tmpIn = references.get(value);
+	            			} else {
+		            			tmpIn = tmpIn.firstChild(value);            			
+	            			}			
+	            		}
+	            		
+	            		tmpOut.value = tmpIn.value;
+	            		
+	            		
+	            		
+	            	}
+            	
+            	}
+            	
+            }
 	        
-	        curTree = root;
+	        
+	        
+            curTree=outRoot.firstChild();
+            		
 	    	try {
 		    	StringBuilder type = new StringBuilder("attachment; filename=");
 				type.append(filename + ".xml");
@@ -154,7 +310,7 @@ public class XMLToXML extends HttpServlet {
 				writer.writeStartDocument();
 				
 				boolean backingOut=false;
-				boolean doLoop=true;
+				doLoop=true;
 				while(doLoop) {
 					
 					if (!backingOut) {

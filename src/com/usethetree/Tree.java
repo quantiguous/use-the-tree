@@ -1,9 +1,11 @@
 package com.usethetree;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Tree {
 
+	// I don't care about getters and setters ;-):
   public String elemName;
   public String value;
 
@@ -12,6 +14,9 @@ public class Tree {
   public Tree parent = null;
   public Tree nextSibling = null;
   public Tree prevSibling = null;
+  
+  public Tree prevGroupingSibling = null;
+  
 
   public Tree(String elemName) {
     this.elemName = elemName;
@@ -42,8 +47,22 @@ public class Tree {
 	  return addLeaf(elemName, null);
   }
   
-
+  public Tree firstChild(String elemName) {
+	  
+	  for (Tree child : this.leafs) {
+		  if (child.elemName.equals(elemName))
+		  return child;
+	  }
+	  return null;
+  }
   
+  public Tree firstChild() {
+	  return this.leafs.getFirst();
+  }
+  
+  public Tree addNextSibling(String elemName) {
+	  return this.parent.addLeaf(elemName);
+  }
   
 
   

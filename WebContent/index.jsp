@@ -15,7 +15,7 @@ import="com.usethetree.ReturnMsg" %>
 <font color="red">---------- currently under development! ----------</font>
 <br/>
 
-<h2>Tree -&gt; flatfile (Status: Early preview)</h3>
+<h2>Tree -&gt; CSV (Status: Early preview)</h3>
 <form action="ToCSV" enctype="multipart/form-data" method="POST" >
 	Sample File: <a href="/SAP_IDOC.xml" download>SAP_IDOC.xml</a><br/>
     <br/>
@@ -32,11 +32,10 @@ import="com.usethetree.ReturnMsg" %>
 <% ReturnMsg.printReturnMsg(request, response); %>
 <br/>
 
-<h2>Flatfile -&gt; tree (Status: Early preview)</h2>
-
+<h2>CSV -&gt; tree (Status: Early preview)</h2>
 <form action="ToXML" enctype="multipart/form-data" method="POST" >
-    <br/>
-    File: <input type="file" name="file" value="" size="10" title=""><br/>
+    File: <input type="file" name="file" value="" size="10" title="">
+    <input type="checkbox" name="writeOutStreaming" checked="checked" value="true"> write out streaming<br/>
     Encoding: <input type="text" name="encoding" value="UTF-8" size="8" title="encoding"> (e.g. UTF-8, UTF-16LE (Excel!))<br/>
     Line Delimiter: <input type="text" name="lineDelimiter" value="\r\n" size="5" title="line delimitier"> (e.g "\r\n" (Windows (Excel!)), "\n" (Unix))<br/>
     Value Separator: <input type="text" name="valueSeparator" value="," size="3" title="value separator"> (e.g. "\t" (Tabulator (Excel!)), "," or "|")<br/>
@@ -47,13 +46,16 @@ import="com.usethetree.ReturnMsg" %>
 <br/>
 <% ReturnMsg.printReturnMsg(request, response); %>
 <br/>
-<br/>
 <h2>Tree -&gt; tree (Status: Very early preview)</h2>
-<br/>
 <form action="XMLToXML" enctype="multipart/form-data" method="POST" >
-    <br/>
     File: <input type="file" name="file" value="" size="10" title=""><br/>
-    Group  by: <input type="text" name="groupBy" value="batch" size="8" title="groupBy"> (e.g. batch, itemNumber, orderNumber, customerID)<br/>
+    <textarea name="cmds" cols="100" rows="20">REF inRefSalesOrder=IDOC.SalesOrders.SalesOrder
+REF outRefSalesOrder=SalesOrders.SalesOrder
+WHILE inRefSalesOrder IS NOT NULL
+	outRefSalesOrder.ID=inRefSalesOrder.CustomerId
+	MOVE inRefSalesOrder NEXT SIBLING
+	MOVE outRefSalesOrder NEXT SIBLING
+RETURN</textarea>
     <br/>
     <input type="submit" name="submit" value="XML -> XML"><br/>
 
