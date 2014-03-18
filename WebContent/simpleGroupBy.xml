@@ -1,0 +1,16 @@
+<Position>	
+	<itemNumber>1</itemNumber>
+	<positionName>skin lotion extra soft</positionName>
+	<SubPosition>
+		<batch>A1</batch>
+		<qty>100</qty>
+	</SubPosition>
+	<SubPosition>
+		<batch>A2</batch>
+		<qty>200</qty>
+	</SubPosition>
+	<SubPosition>		
+		<batch>A1</batch>	
+		<qty>300</qty>
+	</SubPosition>				
+</Position>

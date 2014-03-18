@@ -1,3 +1,20 @@
+/*
+ * Copyright 2014 NH Consulting
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 package com.usethetree;
 
 import java.io.IOException;
@@ -21,8 +38,6 @@ import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
-
-
 
 
 @WebServlet("/XMLToXML")
@@ -278,27 +293,57 @@ public class XMLToXML extends HttpServlet {
 	            			
 	            			references.put(command[1], tmp);
 	            			
-	            		} else if (command[2].equals("TO")) {
-	            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
-	            			if (tmp!=null) {
-	            				String[] values=command[3].split("\\.");
-	            				
-			            		for (String value:values) {
-				         			if (references.containsKey(value)) {
-				         				tmp = references.get(value);
-			            			} else {
-			            				if (value.contains("+")) {
-				            				value=value.replace("+", "");
-				            				tmp=tmp.addLeaf(value);
+	            		} else if (command[2].equals("TO")) {	            			
+	            			
+	            			if (command.length==4) {
+		            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
+		            			if (tmp!=null) {
+		            				String[] values=command[3].split("\\.");
+		            				
+				            		for (String value:values) {
+					         			if (references.containsKey(value)) {
+					         				tmp = references.get(value);
 				            			} else {
-					            			tmp = tmp.firstChild(value);
-					            			if (tmp==null)
-					            				ErrorText = "Exception in Line " + i + ", Element: " + concatenateElements(values) + ", Value: " + value;
-				            			}
-				            		}			
-			            		}
+				            				if (value.contains("+")) {
+					            				value=value.replace("+", "");
+					            				tmp=tmp.addLeaf(value);
+					            			} else {
+						            			tmp = tmp.firstChild(value);
+						            			if (tmp==null)
+						            				ErrorText = "Exception in Line " + i + ", Element: " + concatenateElements(values) + ", Value: " + value;
+					            			}
+					            		}			
+				            		}
+		            			}
+		            			references.put(command[1], tmp);
+	            			
+	            			} else if (command[4].equals("WHERE")&&command[6].equals("EQUALS")) {
+	            				       				
+	    	            		Tree tmpIn = null;
+	    	            		String[] values = command[7].split("\\.");
+	    	            		for (String value:values) {
+	    		         			if (references.containsKey(value)) {
+	    		         				tmpIn = references.get(value);
+	    	            			} else {
+		    	            			tmpIn = tmpIn.firstChild(value);
+		    	            			if (tmpIn==null)
+		    	            				ErrorText = "Exception in Line " + i + ", Element: " + command[7] + ", Value: " + value;
+	    	            			}
+	    	            		}
+	    	            		String value = tmpIn.value;
+	    	            		
+	    	            		Tree tmpOut = references.containsKey(command[1])?references.get(command[1]):null;
+		            			if (tmpOut!=null) {
+	    	            			Tree tmp2 = tmpOut.firstChild(command[3], command[5], value);
+	    		            		if (tmp2==null) {
+	    		            			tmpOut = tmpOut.addLeaf(command[3]);
+	    		            		} else {
+	    		           				tmpOut=tmp2;
+	    		           			}
+	    		            		references.put(command[1], tmpOut);
+	            				} else
+	            					ErrorText = "Exception in Line " + i + ", Element: " + command[1] + ", Value: " + value;
 	            			}
-	            			references.put(command[1], tmp);
 	            		}
 	            		
 	            		
@@ -324,38 +369,75 @@ public class XMLToXML extends HttpServlet {
 	            		
 	            	} else {   // an assignment
             	
-	            		String[] keyValue = command[0].split("=");
-	            		String[] keys = keyValue[0].split("\\.");
-	            		String[] values = keyValue[1].split("\\.");;
-	            		
-	            		Tree tmpOut = null;
-	            		for (String key:keys) {
-		         			if (references.containsKey(key)) {
-	            				tmpOut = references.get(key);
-	            			} else {
-	            				Tree tmp2 = tmpOut.firstChild(key);
-		            			if (tmp2==null) {
-		            				tmpOut = tmpOut.addLeaf(key);
+	            		if (command[0].contains("+=")) {
+	            			
+	            			String[] keyValue = command[0].split("\\+=");
+		            		String[] keys = keyValue[0].split("\\.");
+		            		String[] values = keyValue[1].split("\\.");;
+		            		
+		            		Tree tmpOut = null;
+		            		for (String key:keys) {
+			         			if (references.containsKey(key)) {
+		            				tmpOut = references.get(key);
 		            			} else {
-		            				tmpOut=tmp2;
+		            				Tree tmp2 = tmpOut.firstChild(key);
+			            			if (tmp2==null) {
+			            				tmpOut = tmpOut.addLeaf(key);
+			            			} else {
+			            				tmpOut=tmp2;
+			            			}
+		            			}			
+		            		}
+		            		
+		            		Tree tmpIn = null;
+		            		for (String value:values) {
+			         			if (references.containsKey(value)) {
+			         				tmpIn = references.get(value);
+		            			} else {
+			            			tmpIn = tmpIn.firstChild(value);
+			            			if (tmpIn==null)
+			            				ErrorText = "Exception in Line " + i + ", Element: " + concatenateElements(keys) + ", Value: " + value;
 		            			}
-	            			}			
+		            		}
+		            		if (tmpOut.value!=null) 
+		            			tmpOut.value = "" + (Integer.parseInt(tmpOut.value) + Integer.parseInt(tmpIn.value));
+		            		else
+		            			tmpOut.value = tmpIn.value;
+	            		
+	            			
+	            		} else {
+		            		String[] keyValue = command[0].split("=");
+		            		String[] keys = keyValue[0].split("\\.");
+		            		String[] values = keyValue[1].split("\\.");;
+		            		
+		            		Tree tmpOut = null;
+		            		for (String key:keys) {
+			         			if (references.containsKey(key)) {
+		            				tmpOut = references.get(key);
+		            			} else {
+		            				Tree tmp2 = tmpOut.firstChild(key);
+			            			if (tmp2==null) {
+			            				tmpOut = tmpOut.addLeaf(key);
+			            			} else {
+			            				tmpOut=tmp2;
+			            			}
+		            			}			
+		            		}
+		            		
+		            		Tree tmpIn = null;
+		            		for (String value:values) {
+			         			if (references.containsKey(value)) {
+			         				tmpIn = references.get(value);
+		            			} else {
+			            			tmpIn = tmpIn.firstChild(value);
+			            			if (tmpIn==null)
+			            				ErrorText = "Exception in Line " + i + ", Element: " + concatenateElements(keys) + ", Value: " + value;
+		            			}
+		            		}
+		            		
+		            		tmpOut.value = tmpIn.value;
+	            		
 	            		}
-	            		
-	            		Tree tmpIn = null;
-	            		for (String value:values) {
-		         			if (references.containsKey(value)) {
-		         				tmpIn = references.get(value);
-	            			} else {
-	            			tmpIn = tmpIn.firstChild(value);
-	            			if (tmpIn==null)
-	            				ErrorText = "Exception in Line " + i + ", Element: " + concatenateElements(keys) + ", Value: " + value;
-	            			}
-	            		}
-	            		
-	            		tmpOut.value = tmpIn.value;
-	            		
-	            		
 	            		
 	            	}
             	
@@ -369,7 +451,7 @@ public class XMLToXML extends HttpServlet {
             		
 	    	try {
 		    	StringBuilder type = new StringBuilder("attachment; filename=");
-				type.append(filename + ".xml");
+				type.append("Result_" + filename);
 				
 				//response.setContentLength( - not known, since writing out streaming - );
 				response.setContentType("application/octet-stream");

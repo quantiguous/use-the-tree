@@ -1,0 +1,27 @@
+REF rInSalesOrder=IDOC.SalesOrders
+REF rOutSalesOrder=
+IF rInSalesOrder IS NOT NULL
+	MOVE rOutSalesOrder TO +SalesOrder
+	MOVE rInSalesOrder TO SalesOrder
+	WHILE rInSalesOrder IS NOT NULL
+		MOVE rOutSalesOrder TO +SalesOrder
+		rOutSalesOrder.ID=rInSalesOrder.CustomerId
+		REF rInPosition=rInSalesOrder.Position
+		REF rOutPosition=rOutSalesOrder
+		WHILE rInPosition IS NOT NULL
+			MOVE rOutPosition TO +Position
+			rOutPosition.itemNumber=rInPosition.itemNumber
+			rOutPosition.posName=rInPosition.positionName
+			REF rInSubPosition=rInPosition.SubPosition
+			REF rOutSubPosition=rOutPosition
+			WHILE rInSubPosition IS NOT NULL
+				MOVE rOutSubPosition TO +SubPos
+				rOutSubPosition.charge=rInSubPosition.batch
+				rOutSubPosition.quantity=rInSubPosition.qty
+				MOVE rOutSubPosition PARENT
+				MOVE rInSubPosition NEXT SIBLING
+			MOVE rOutPosition PARENT
+			MOVE rInPosition NEXT SIBLING
+		MOVE rOutSalesOrder PARENT
+		MOVE rInSalesOrder NEXT SIBLING
+RETURN

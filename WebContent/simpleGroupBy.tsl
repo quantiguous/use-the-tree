@@ -1,0 +1,13 @@
+REF rInSubPosition=Position
+REF rOutSubPos=
+IF rInSubPosition IS NOT NULL
+	MOVE rOutSubPos TO +Pos
+	rOutSubPos.item=rInSubPosition.itemNumber
+	MOVE rInSubPosition TO SubPosition
+	WHILE rInSubPosition IS NOT NULL
+		MOVE rOutSubPos TO SubPos WHERE charge EQUALS rInSubPosition.batch
+		rOutSubPos.charge=rInSubPosition.batch
+		rOutSubPos.quantity+=rInSubPosition.qty
+		MOVE rOutSubPos PARENT
+		MOVE rInSubPosition NEXT SIBLING
+RETURN
