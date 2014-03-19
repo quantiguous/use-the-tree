@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Stack;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -53,11 +52,19 @@ public class XMLToXML extends HttpServlet {
         
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
+   
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         
-        String contentType = request.getContentType();
+    	
+        String errorText = null;
+        String contentType = null;
+        try {
+        	contentType = request.getContentType();
+        } catch (Exception e) {
+        	errorText=e.getMessage();
+        }
         
-        if ((contentType != null) && (contentType.indexOf("multipart/form-data") >= 0)) {       
+        if (errorText==null&&contentType!=null&&contentType.indexOf("multipart/form-data")>=0) {       
 
             String filename = "xml";
             Part filePart = null;
@@ -65,35 +72,38 @@ public class XMLToXML extends HttpServlet {
                 filePart = request.getPart("file");
                 filename = getFileName(filePart);
             } catch (IOException e1) {
-                returnMsg(request, response, "errorText", e1.getMessage());
+                errorText = e1.getMessage();
             } catch (ServletException e) {
-                returnMsg(request, response, "errorText", e.getLocalizedMessage());
+            	errorText = e.getMessage();
             }
             
-            if (filename.isEmpty()) {
-            	 returnMsg(request, response, "errorText", "No filename found. Did you select a file?");
-            }
-            
-            String cmds = request.getParameter("cmds");
-            
-            InputStream in = null;
-			try {
-				in = filePart.getInputStream();
-			} catch (IOException e1) {
-				 returnMsg(request, response, "errorText", e1.getMessage());
-			}
-            XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
             XMLStreamReader xmlStreamReader = null;
-			try {
-				xmlStreamReader = xmlInputFactory.createXMLStreamReader(in);
-			} catch (XMLStreamException e1) {
-				 returnMsg(request, response, "errorText", e1.getMessage());
-			}
-			
-			// when XMLStreamReader is created, 
-	        // it is positioned at START_DOCUMENT event.
-	        int eventType = xmlStreamReader.getEventType();
-	    	
+            int eventType = 0;
+            String cmds = null;
+            if (filename.isEmpty()) {
+            	 errorText = "No filename found. Did you select a file?";
+            } else {
+            
+	            cmds = request.getParameter("cmds");
+	            
+	            InputStream in = null;
+				try {
+					in = filePart.getInputStream();
+				} catch (IOException e1) {
+					 errorText = e1.getMessage();
+				}
+	            XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
+	           
+				try {
+					xmlStreamReader = xmlInputFactory.createXMLStreamReader(in);
+				} catch (XMLStreamException e1) {
+					 errorText = e1.getMessage();
+				}
+				
+				// when XMLStreamReader is created, 
+		        // it is positioned at START_DOCUMENT event.
+		        eventType = xmlStreamReader.getEventType();
+            }
         	int depth = 0;
         	
         	String curElem = "";
@@ -105,7 +115,7 @@ public class XMLToXML extends HttpServlet {
         	
 	        try {
 	        	
-				while(xmlStreamReader.hasNext()) {
+				while(errorText==null&&xmlStreamReader.hasNext()) {
 				    eventType = xmlStreamReader.next();
 				    
 				    switch (eventType) {
@@ -152,7 +162,7 @@ public class XMLToXML extends HttpServlet {
 				    }
 				}
 			} catch (XMLStreamException e) {
-				returnMsg(request, response, "errorText", e.getMessage());
+				 errorText = e.getMessage();
 			}
     	
             HashMap<String, Tree> references = new HashMap<String, Tree>();
@@ -161,15 +171,17 @@ public class XMLToXML extends HttpServlet {
 //TODO      Stack<Integer> blockStructureStackEndLines = new Stack<Integer>();
             Stack<String> blockStructureStackTypes = new Stack<String>();
             
-            String[] commands = cmds.split("\r\n");
+            String[] commands = null;
+            if (errorText==null)
+            	commands=cmds.split("\r\n");
             String[] command = null;
             boolean doLoop=false;
             
-            String ErrorText = null;
+           
             int curTabCount = 0;
             int prevTabCount = 0;
             
-            for (int i=0; i<commands.length; i++) {
+            for (int i=0; errorText==null&&i<commands.length; i++) {
             	String c = commands[i];
             	String c2 = c.replace("\t", "");
             	prevTabCount = curTabCount;
@@ -206,22 +218,27 @@ public class XMLToXML extends HttpServlet {
 	                	command = c2.split(" ");
             		} else if (curBlockStructureType.equals("IF")) {
             			blockStructureStackBeginLines.pop();
-            		}
+            		} else
+            			errorText = "Only \"IF\" and \"WHILE\" allowed, but found \"" + curBlockStructureType + "\" !";
+            		
             	}
             	
             	if (blockStructureStackTypes.size()>=curTabCount) {		// only execute commands that have an "active" WHILE
             	
-	            	if (command[0].equals("REF")) {
+	            	if (command.length>=1&&command[0].equals("REF")) {
 	            		
 	            		String[] keyValue = command[1].split("=");
 	            		String key = keyValue[0];
 	            		String value = null;
 	            		Tree tmp = null;
-	            		if (keyValue.length==1)
+	            		if (keyValue.length==1)				// Position ref at (in/out) root ("empty reference")
 	            			if (key.startsWith("rIn"))
 		            			tmp = inRoot;
-		            		else
+		            		else if (key.startsWith("rOut"))
 		            			tmp = outRoot;
+		            		else
+		            			errorText= "Error in Line " + (i+1) + ", references need to start with rIn... or rOut... !";
+            			
 	            		else {
 	            			value = keyValue[1];
 	            		
@@ -233,15 +250,22 @@ public class XMLToXML extends HttpServlet {
 	            				l=1;
 	            			} else if (key.startsWith("rIn"))
 		            			tmp = inRoot;
-		            		else
+		            		else if (key.startsWith("rOut"))
 		            			tmp = outRoot;
+		            		else
+		            			errorText= "Error in Line " + (i+1) + ", references need to start with rIn... or rOut... !";
 	            			
 	            			String s = null;
 		            		for (int k=l;k<reference.length;k++) {
 		            			s = reference[k];
 		            			Tree tmp2 = tmp.firstChild(s);
-		            			if (tmp2==null) {
-		            				tmp = tmp.addLeaf(s);
+		            			if (tmp2==null) {  
+		            				if (key.startsWith("rOut"))    // on the outRoot create new Elements
+		            					tmp = tmp.addLeaf(s);
+		            				else if (key.startsWith("rIn"))
+		            					errorText = "Error in Line " + (i+1) + ", did not find element: " + s;
+		            				else
+		            					errorText= "Error in Line " + (i+1) + ", references need to start with rIn... or rOut... !";
 		            			} else {
 		            				tmp=tmp2;
 		            			}
@@ -250,50 +274,54 @@ public class XMLToXML extends HttpServlet {
 	            		}
 	            		references.put(key, tmp);
 	            		
-	            	} else if (command[0].equals("MOVE")) {
+	            	} else if (command.length>=3&&command[0].equals("MOVE")) {
 	            		
-	            		if (command[2].equals("NEXT")&&command[3].equals("SIBLING")) {
+	            		if (command.length>=4&&command[2].equals("NEXT")&&command[3].equals("SIBLING")) {
 	            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
 	            			if (tmp!=null)
 	            				if (command[1].startsWith("rIn"))
 	            					tmp = tmp.nextSibling;
-			            		else {
+			            		else if (command[1].startsWith("rOut")) {   		// on the outRoot create new Elements
 			            			Tree tmp2 = tmp.nextSibling;
-			            			if (tmp2==null) {
+			            			if (tmp2==null)
 			            				tmp = tmp.addNextSibling(tmp.elemName);
-			            			} else {
+			            			else
 			            				tmp=tmp2;
-			            			}
-			            			
-			            		}
+			            		} else
+			            			errorText= "Error in Line " + (i+1) + ", references need to start with rIn... or rOut... !";
+	            			else
+	            				errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + command[1] + "=...\" before!";
 	            			
 	            			references.put(command[1], tmp);
 	            		
-	            		} else if (command[2].equals("FIRST")&&command[3].equals("CHILD")) {
+	            		} else if (command.length>=4&&command[2].equals("FIRST")&&command[3].equals("CHILD")) {
 	            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
 	            			if (tmp!=null)
-	            				if (command[1].startsWith("in"))
+	            				if (command[1].startsWith("rIn"))
 	            					tmp = tmp.firstChild();
 			            		else {
 			            			Tree tmp2 = tmp.firstChild();
-			            			if (tmp2==null) {
-			            				tmp = tmp.addLeaf(tmp.elemName);
-			            			} else {
+			            			if (tmp2==null)
+			            				if (command[1].startsWith("rOut"))			// on the outRoot create new Elements
+			            					tmp = tmp.addLeaf(tmp.elemName);
+			            			else
 			            				tmp=tmp2;
-			            			}
-			            			
 			            		}
+	            			else
+	            				errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + command[1] + "=...\" before!";
 	            			
 	            			references.put(command[1], tmp);
 	            			
-	            		} else if (command[2].equals("PARENT")) {
+	            		} else if (command.length>=3&&command[2].equals("PARENT")) {
 	            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
 	            			if (tmp!=null)
 	            				tmp = tmp.parent;
+	            			else
+	            				errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + command[1] + "=...\" before!";
 	            			
 	            			references.put(command[1], tmp);
 	            			
-	            		} else if (command[2].equals("TO")) {	            			
+	            		} else if (command.length>=4&&command[2].equals("TO")) {	            			
 	            			
 	            			if (command.length==4) {
 		            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
@@ -304,205 +332,258 @@ public class XMLToXML extends HttpServlet {
 					         			if (references.containsKey(value)) {
 					         				tmp = references.get(value);
 				            			} else {
-				            				if (value.contains("+")) {
+				            				if (value.contains("+")&&command[1].startsWith("rOut")) {
 					            				value=value.replace("+", "");
 					            				tmp=tmp.addLeaf(value);
 					            			} else {
-						            			tmp = tmp.firstChild(value);
-						            			if (tmp==null)
-						            				ErrorText = "Exception in Line " + i + ", Element: " + concatenateElements(values) + ", Value: " + value;
+						            			Tree tmp2 = tmp.firstChild(value);
+						            			if (tmp2==null)
+						            				if (command[1].startsWith("rOut"))			// on the outRoot create new Elements
+						            					tmp = tmp.addLeaf(value);
+						            				else if (command[1].startsWith("rIn"))		// do not allow to create new Elements on the inRoot
+						            					errorText = "Error in Line " + (i+1) + ", did not find element: " + value;
+						            				else
+						            					errorText= "Error in Line " + (i+1) + ", references need to start with rIn... or rOut... !";
+						            			else
+						            				tmp=tmp2;
 					            			}
-					            		}			
+					            		}
 				            		}
-		            			}
-		            			references.put(command[1], tmp);
-	            			
-	            			} else if (command[4].equals("WHERE")&&command[6].equals("EQUALS")) {
+		            			} else
+		            				errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + command[1] + "=...\" before!";
+		
+	            				references.put(command[1], tmp);
+            			
+	            			} else if (command.length>=8&&command[4].equals("WHERE")&&command[6].equals("EQUALS")) {
 	            				       				
 	    	            		Tree tmpIn = null;
 	    	            		String[] values = command[7].split("\\.");
 	    	            		for (String value:values) {
 	    		         			if (references.containsKey(value)) {
 	    		         				tmpIn = references.get(value);
+	    		         				if (tmpIn==null)
+	    		         					errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + command[7] + "=...\" before!";
 	    	            			} else {
 		    	            			tmpIn = tmpIn.firstChild(value);
 		    	            			if (tmpIn==null)
-		    	            				ErrorText = "Exception in Line " + i + ", Element: " + command[7] + ", Value: " + value;
+		    	            				errorText = "Error in Line " + (i+1) + ", did not find element: " + value;
 	    	            			}
 	    	            		}
-	    	            		String value = tmpIn.value;
 	    	            		
-	    	            		Tree tmpOut = references.containsKey(command[1])?references.get(command[1]):null;
-		            			if (tmpOut!=null) {
-	    	            			Tree tmp2 = tmpOut.firstChild(command[3], command[5], value);
-	    		            		if (tmp2==null) {
-	    		            			tmpOut = tmpOut.addLeaf(command[3]);
-	    		            		} else {
-	    		           				tmpOut=tmp2;
-	    		           			}
-	    		            		references.put(command[1], tmpOut);
-	            				} else
-	            					ErrorText = "Exception in Line " + i + ", Element: " + command[1] + ", Value: " + value;
+	    	            		if (errorText==null) {
+	    	            		
+		    	            		String value = tmpIn.value;
+		    	            		
+		    	            		Tree tmpOut = references.containsKey(command[1])?references.get(command[1]):null;
+			            			if (tmpOut!=null) {
+		    	            			Tree tmp2 = tmpOut.firstChild(command[3], command[5], value);
+		    		            		if (tmp2==null) {
+		    		            			tmpOut = tmpOut.addLeaf(command[3]);
+		    		            		} else {
+		    		           				tmpOut=tmp2;
+		    		           			}
+		    		            		references.put(command[1], tmpOut);
+		            				} else
+		            					errorText = "Error in Line " + (i+1) + ", Element: " + command[1] + ", Value: " + value;
+	    	            		}
 	            			}
-	            		}
+	            			
+	            		} else
+	            			errorText = "Error in Line " + (i+1) + ": Expected \"PARENT\", \"NEXT\" or \"TO\", but found \"" + command[2] + "\"!";
 	            		
-	            		
-	            	} else if (command[0].equals("WHILE")) {
+	            	} else if (command.length>=5&&command[0].equals("WHILE")) {
 	            		if (command[2].equals("IS")&&command[3].equals("NOT")&&command[4].equals("NULL")) {
 	            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
-	            			if (tmp!=null)
+	            			if (tmp!=null) {
 	            				blockStructureStackBeginLines.add(i);
             					blockStructureStackTypes.add("WHILE");
+	            			} else
+	            				errorText = "Error in Line " + (i+1) + ": WHILE statements are only allowed in the form \"WHILE ... IS NOT NULL\"";
+	            			
 	            		}
 	            		
-	            	} else if (command[0].equals("IF")) {
+	            	} else if (command.length>=5&&command[0].equals("IF")) {
 	            		if (command[2].equals("IS")&&command[3].equals("NOT")&&command[4].equals("NULL")) {
 	            			Tree tmp = references.containsKey(command[1])?references.get(command[1]):null;
-	            			if (tmp!=null)
+	            			if (tmp!=null) {
 	            				blockStructureStackBeginLines.add(i);
 	            				blockStructureStackTypes.add("IF");
-	            		}
+	            			} else
+	            				errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + command[1] + "=...\" before!";
+	            			
+	            		} else
+	            			errorText = "Error in Line " + (i+1) + ": IF statements are only allowed in the form \"IF ... IS NOT NULL\"";
+            			
+	            			
 	            		
-	            	} else if (command[0].equals("RETURN")) {
+	            	} else if (command.length>=1&&command[0].equals("RETURN")) {
 	            		
 	            		// finished.
 	            		
-	            	} else {   // an assignment
-            	
-	            		if (command[0].contains("+=")) {
+	            	} else if (command.length>=2&&command[0].equals("SET")) {
 	            			
-	            			String[] keyValue = command[0].split("\\+=");
+	            		if (command[1].contains("+=")) {
+	            			
+	            			String[] keyValue = command[1].split("\\+=");
 		            		String[] keys = keyValue[0].split("\\.");
 		            		String[] values = keyValue[1].split("\\.");;
 		            		
 		            		Tree tmpOut = null;
 		            		for (String key:keys) {
-			         			if (references.containsKey(key)) {
-		            				tmpOut = references.get(key);
-		            			} else {
-		            				Tree tmp2 = tmpOut.firstChild(key);
-			            			if (tmp2==null) {
-			            				tmpOut = tmpOut.addLeaf(key);
+		            			if (errorText==null)
+				         			if (references.containsKey(key)) {
+			            				tmpOut = references.get(key);
 			            			} else {
-			            				tmpOut=tmp2;
-			            			}
-		            			}			
+			            				if (tmpOut!=null) {
+				            				Tree tmp2 = tmpOut.firstChild(key);
+					            			if (tmp2==null)
+					            				tmpOut = tmpOut.addLeaf(key);			// create new elements on the outRoot
+					            			else
+					            				tmpOut=tmp2;
+			            				} else
+			            					errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + key + "=...\" before!";
+			            			}			
 		            		}
 		            		
 		            		Tree tmpIn = null;
 		            		for (String value:values) {
-			         			if (references.containsKey(value)) {
-			         				tmpIn = references.get(value);
-		            			} else {
-			            			tmpIn = tmpIn.firstChild(value);
-			            			if (tmpIn==null)
-			            				ErrorText = "Exception in Line " + i + ", Element: " + concatenateElements(keys) + ", Value: " + value;
-		            			}
+		            			if (errorText==null)
+				         			if (references.containsKey(value)) {
+				         				tmpIn = references.get(value);
+			            			} else {
+			            				if (tmpIn!=null) {
+					            			tmpIn = tmpIn.firstChild(value);
+					            			if (tmpIn==null)
+					            				errorText = "Error in Line " + (i+1) + ", did not find element: " + value;
+			            				} else
+			            					errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + value + "=...\" before!";
+				            		
+			            			}
 		            		}
-		            		if (tmpOut.value!=null) 
-		            			tmpOut.value = "" + (Integer.parseInt(tmpOut.value) + Integer.parseInt(tmpIn.value));
-		            		else
-		            			tmpOut.value = tmpIn.value;
+		            		if (errorText==null)
+			            		if (tmpOut.value!=null) 
+			            			tmpOut.value = "" + (Integer.parseInt(tmpOut.value) + Integer.parseInt(tmpIn.value));
+			            		else if (tmpIn.value!=null) 
+			            			tmpOut.value = tmpIn.value;
+			            		else
+			            			errorText = "Error in Line " + (i+1) + ", Missing value on element: " + tmpOut.elemName;
 	            		
-	            			
-	            		} else {
-		            		String[] keyValue = command[0].split("=");
+	            		} else if (command[1].contains("=")) {
+		            		String[] keyValue = command[1].split("=");
 		            		String[] keys = keyValue[0].split("\\.");
 		            		String[] values = keyValue[1].split("\\.");;
 		            		
 		            		Tree tmpOut = null;
 		            		for (String key:keys) {
-			         			if (references.containsKey(key)) {
-		            				tmpOut = references.get(key);
-		            			} else {
-		            				Tree tmp2 = tmpOut.firstChild(key);
-			            			if (tmp2==null) {
-			            				tmpOut = tmpOut.addLeaf(key);
+		            			if (errorText==null)
+				         			if (references.containsKey(key)) {
+			            				tmpOut = references.get(key);
 			            			} else {
-			            				tmpOut=tmp2;
+			            				if (tmpOut!=null) {
+				            				Tree tmp2 = tmpOut.firstChild(key);
+					            			if (tmp2==null)
+					            				tmpOut = tmpOut.addLeaf(key);			// create new elements on the outRoot
+					            			else
+					            				tmpOut=tmp2;
+			            				} else
+			            					errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + key + "=...\" before!";
 			            			}
-		            			}			
 		            		}
 		            		
 		            		Tree tmpIn = null;
 		            		for (String value:values) {
-			         			if (references.containsKey(value)) {
-			         				tmpIn = references.get(value);
-		            			} else {
-			            			tmpIn = tmpIn.firstChild(value);
-			            			if (tmpIn==null)
-			            				ErrorText = "Exception in Line " + i + ", Element: " + concatenateElements(keys) + ", Value: " + value;
-		            			}
+		            			if (errorText==null)
+				         			if (references.containsKey(value)) {
+				         				tmpIn = references.get(value);
+			            			} else {
+			            				if (tmpIn!=null) {
+					            			tmpIn = tmpIn.firstChild(value);
+					            			if (tmpIn==null)
+					            				errorText = "Error in Line " + (i+1) + ", did not find element: " + value;
+			            				} else
+			            					errorText = "Error in Line " + (i+1) + ": Reference has not been declared/defined with \"REF " + value + "=...\" before!";
+				            			
+			            			}
 		            		}
 		            		
-		            		tmpOut.value = tmpIn.value;
+		            		if (errorText==null)
+			            		if (tmpIn.value!=null) 
+			            			tmpOut.value = tmpIn.value;
+			            		else
+			            			errorText = "Error in Line " + (i+1) + ", Missing value on element: " + tmpOut.elemName;
 	            		
-	            		}
-	            		
-	            	}
-            	
+	            		} else
+	            			errorText="Error in Line " + (i+1) + ", SET-statement requires \"=\" or \"+=\" !";
+
+	            	} else 
+            			errorText="Error in Line " + (i+1) + ", Expected \"REF\", \"MOVE\", \"WHILE\", \"RETURN\" or \"SET\", but found \"" + command[0] + "\" !";
+
             	}
             	
             }
 	        
+	        if (errorText==null) {
 	        
-	        
-            curTree=outRoot.firstChild();
-            		
-	    	try {
-		    	StringBuilder type = new StringBuilder("attachment; filename=");
-				type.append("Result_" + filename);
-				
-				//response.setContentLength( - not known, since writing out streaming - );
-				response.setContentType("application/octet-stream");
-				response.setHeader("Content-Disposition", type.toString());
-				XMLOutputFactory factory = XMLOutputFactory.newInstance();
-				XMLStreamWriter writer = factory.createXMLStreamWriter(
-			               response.getOutputStream() );
-				
-				writer.writeStartDocument();
-				
-				boolean backingOut=false;
-				doLoop=true;
-				while(doLoop) {
+	            curTree=outRoot.firstChild();
+	            		
+		    	try {
+			    	StringBuilder type = new StringBuilder("attachment; filename=");
+					type.append("Result_" + filename);
 					
-					if (!backingOut) {
-						writer.writeStartElement(curTree.elemName);
-						if (curTree.value!=null) {
-							writer.writeCharacters(curTree.value);
-							writer.writeEndElement();
-						}
-					}	
+					//response.setContentLength( - not known, since writing out streaming - );
+					response.setContentType("application/octet-stream");
+					response.setHeader("Content-Disposition", type.toString());
+					XMLOutputFactory factory = XMLOutputFactory.newInstance();
+					XMLStreamWriter writer = factory.createXMLStreamWriter(
+				               response.getOutputStream() );
 					
-					if (!backingOut&&!curTree.leafs.isEmpty()) {
-						curTree = curTree.leafs.getFirst();
-					} else {
-						if (curTree.nextSibling!=null) {
-							curTree = curTree.nextSibling;
-							backingOut=false;
-						} else {
-							if (curTree.parent!=outRoot ) {
-								curTree = curTree.parent;
+					writer.writeStartDocument();
+					
+					boolean backingOut=false;
+					doLoop=true;
+					while(doLoop) {
+						
+						if (!backingOut) {
+							writer.writeStartElement(curTree.elemName);
+							if (curTree.value!=null) {
+								writer.writeCharacters(curTree.value);
 								writer.writeEndElement();
-								backingOut=true;
-							} else
-								doLoop=false;
+							}
+						}	
+						
+						if (!backingOut&&!curTree.leafs.isEmpty()) {
+							curTree = curTree.leafs.getFirst();
+						} else {
+							if (curTree.nextSibling!=null) {
+								curTree = curTree.nextSibling;
+								backingOut=false;
+							} else {
+								if (curTree.parent!=outRoot ) {
+									curTree = curTree.parent;
+									writer.writeEndElement();
+									backingOut=true;
+								} else
+									doLoop=false;
+							}
 						}
+						
 					}
-					
+									
+					writer.writeEndDocument();
+					writer.flush();
+					writer.close();
+		
+				} catch (IOException e) {
+//					returnMsg(request, response, "errorText", e.getMessage());
+				} catch (XMLStreamException e1) {
+//					 returnMsg(request, response, "errorText", e1.getMessage());
 				}
-								
-				writer.writeEndDocument();
-				writer.flush();
-				writer.close();
-	
-			} catch (IOException e) {
-				returnMsg(request, response, "errorText", e.getMessage());
-			} catch (XMLStreamException e1) {
-				 returnMsg(request, response, "errorText", e1.getMessage());
-			}
             
          	        
+	        } else {
+	        	
+	        	returnMsg(request, response, "errorText", errorText);
+	        }    
         }
         
     }
