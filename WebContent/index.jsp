@@ -23,7 +23,7 @@ Multiple Group By: <a href="/GroupBy2.IN.xml" download>GroupBy2.IN.xml</a><br/>
 Composite Group By: <a href="/GroupBy3.IN.xml" download>GroupBy3.IN.xml</a><br/>
 <br/>
     XML-File: <input type="file"  name="file" value="" size="10" title="">
-       <input type="checkbox" name="useHashMap" value="true"> use hash map<br/>
+       <input type="checkbox" name="useHashMap" checked="checked" value="true"> use hash map<br/>
     <font color="red"><%=request.getAttribute("errorText")!=null?request.getAttribute("errorText")+"<br/>":"" %></font>
     <br/>
     <input type="submit" name="submit" value="XML -> XML"><br/>

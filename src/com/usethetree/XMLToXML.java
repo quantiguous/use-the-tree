@@ -101,21 +101,105 @@ public class XMLToXML extends HttpServlet {
 		        
 	        	Ref rInPosition = inRoot.firstChild.firstChild;    // message.header
 	        	Ref rOutPos = outRoot.addChild("msg");
-	        	rOutPos.addChild("timestamp", rInPosition.firstChild("date").value + " " + rInPosition.firstChild("time").value);
+	        	rOutPos.addChild("timestamp").value = rInPosition.firstChild("date").value + " " + rInPosition.firstChild("time").value;
 	        	rInPosition = inRoot.firstChild("message").firstChild("orders").firstChild("order");
 	        	rOutPos.addChild("ordNo", rInPosition.firstChild("orderNumber").value);
 	        	rInPosition = rInPosition.firstChild("positions").firstChild("position");
 	        	while (rInPosition!=null) {
 	        		rOutPos = rOutPos.moveWhere("items", "MATNR", rInPosition.firstChild("materialNumber").value);   		
-	        		if (rOutPos.firstChild("MATNR")==null)
-	        			rOutPos.addChild("MATNR", rInPosition.firstChild("materialNumber").value);
-	        		if (rOutPos.firstChild("QTY")==null)
-	        			rOutPos.addChild("QTY", rInPosition.firstChild("quantity").value);
-	        		else
-	        			rOutPos.firstChild("QTY").value = "" + (Integer.parseInt(rOutPos.firstChild("QTY").value) + Integer.parseInt(rInPosition.firstChild("quantity").value));
+	        		
+	        		rOutPos.set("MATNR").value = rInPosition.firstChild("materialNumber").value;
+	        		rOutPos.add(("QTY"), rInPosition.firstChild("quantity").value);
+	        		
 	        		rOutPos = rOutPos.parent;
 	        		rInPosition = rInPosition.nextSibling;
 	        	}
+	        
+	        } else if (errorText==null&&useHashMap&&filename.startsWith("GroupBy2.IN")) {
+	       	    
+	        	Ref rOutOrder = outRoot.addChild("message").addChild("order");
+	        	Ref rInOrder = inRoot.firstChild("message").firstChild("order");
+	        	while (rInOrder!=null) {
+	        		Ref rOutPos = rOutOrder;
+	        		Ref rInPos = rInOrder.firstChild("position");
+	        		while(rInPos!=null) {
+	        	  
+	        			rOutPos = rOutPos.moveWhere("position", "materialNumber", rInPos.firstChild("materialNumber").value);
+	        			
+	        			if (rOutPos.firstChild("materialNumber")==null)
+	        				rOutPos.addChild("materialNumber").value = rInPos.firstChild("materialNumber").value;
+	        			if (rOutPos.firstChild("quantity")==null)
+	        				rOutPos.addChild("quantity").value = rInPos.firstChild("quantity").value;
+	        			else
+		        			rOutPos.firstChild("quantity").value = "" + (Integer.parseInt(rOutPos.firstChild("quantity").value) + Integer.parseInt(rInPos.firstChild("quantity").value));
+		        		
+	        			Ref rOutSubPos = rOutPos;
+	        			Ref rInSubPos = rInPos.firstChild("subPos");
+	        			while (rInSubPos!=null) {
+	        			
+	        				rOutSubPos = rOutSubPos.moveWhere("subPos", "batch", rInSubPos.firstChild("batch").value);
+	        				
+	        				if (rOutSubPos.firstChild("batch")==null)
+		        				rOutSubPos.addChild("batch").value = rInSubPos.firstChild("batch").value;
+		        			if (rOutSubPos.firstChild("quantity")==null)
+		        				rOutSubPos.addChild("quantity").value = rInSubPos.firstChild("quantity").value;
+		        			else
+			        			rOutSubPos.firstChild("quantity").value = "" + (Integer.parseInt(rOutSubPos.firstChild("quantity").value) + Integer.parseInt(rInSubPos.firstChild("quantity").value));
+			        		
+		        			rOutSubPos = rOutSubPos.parent;
+			        		rInSubPos = rInSubPos.nextSibling;
+	        				
+	        			}
+	        			
+	        			rOutPos = rOutPos.parent;
+		        		rInPos = rInPos.nextSibling;
+	        			
+	        		}
+	        		
+	        		rOutOrder = rOutOrder.parent;
+	        		rInOrder = rInOrder.nextSibling;
+	        	}
+			
+	        } else if (errorText==null&&useHashMap&&filename.startsWith("GroupBy3.IN")) {
+				
+				outRoot.addChild("message").addChild("date").value = inRoot.firstChild("message").firstChild("header").firstChild("date").value + " " + inRoot.firstChild("message").firstChild("header").firstChild("time").value;
+				
+				Ref rOutOrder = outRoot;
+				Ref rInOrder = inRoot.firstChild("message").firstChild("orders").firstChild("order");
+				while (rInOrder!=null) {
+				
+					rOutOrder = rOutOrder.firstChild("message").addChild("orders").addChild("order");
+					rOutOrder.addChild("orderNumber").value = rInOrder.firstChild("orderNumber").value;
+				
+					Ref rOutPos = rOutOrder.addChild("positions");;
+					Ref rInPos = rInOrder.firstChild("positions").firstChild("position");
+					while (rInPos!=null) {
+						
+						String groupBy = rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value;
+						
+						rOutPos = rOutPos.moveWhere("position", "tmp", groupBy);
+						
+						if (rOutPos.firstChild("tmp")==null)
+	        				rOutPos.addChild("tmp").value = groupBy;
+						if (rOutPos.firstChild("materialNumber")==null)
+	        				rOutPos.addChild("materialNumber").value = rInPos.firstChild("materialNumber").value;
+						if (rOutPos.firstChild("batch")==null)
+	        				rOutPos.addChild("batch").value = rInPos.firstChild("batch").value;
+						if (rOutPos.firstChild("quantity")==null)
+	        				rOutPos.addChild("quantity").value = rInPos.firstChild("quantity").value;
+						else
+		        			rOutPos.firstChild("quantity").value = "" + (Integer.parseInt(rOutPos.firstChild("quantity").value) + Integer.parseInt(rInPos.firstChild("quantity").value));
+		        		
+						rOutPos = rOutPos.parent;
+		        		rInPos = rInPos.nextSibling;
+						
+					}
+					
+					rOutPos.removeFieldFromChildren("position", "tmp");
+					
+					rOutOrder = rOutOrder.parent;
+	        		rInOrder = rInOrder.nextSibling;
+				}
 	        	
 	        } else if (errorText==null&&filename.startsWith("GroupBy1.IN")) {
 	        
@@ -221,7 +305,8 @@ public class XMLToXML extends HttpServlet {
 	        		rInOrder = rInOrder.nextSibling;
 				}
 				
-	        }
+	        } else
+	        	errorText = "Did not recognize file " + filename;
 	        
 	        
 	        if (errorText==null) {
@@ -271,39 +356,5 @@ public class XMLToXML extends HttpServlet {
         return null;
     }
 
-    private String concatenateElements(String[] strings) {
-
-    	return concatenateElements(strings, strings.length);
-
-    }
-    
-    private String concatenateElements(String[] strings, int maxCount) {
-
-    	String result = "";
-    	if (strings.length>0&&maxCount>0)
-    		result = strings[0];
-    	int i=1;
-    	while (i<strings.length && i<maxCount) {
-    		result += "." + strings[i];
-    		i++;
-    	}
-    	return result;
-
-    }
-    
-    private String concatenateElements(LinkedList<String> linkedList, int maxCount) {
-
-    	String result = "";
-    	Iterator<String> it = linkedList.iterator();
-    	if (it.hasNext()) 
-    		result = it.next();
-    	int i = 1;
-    	while (it.hasNext()&&i<maxCount) {
-    	  result += "." + it.next();
-    	  i++;
-    	}
-    	return result;
-
-    }
-
+   
 }

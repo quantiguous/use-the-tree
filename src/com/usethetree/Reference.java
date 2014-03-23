@@ -31,12 +31,10 @@ import javax.servlet.http.HttpServletResponse;
 
 public class Reference {
 
-  // I don't care about getters and setters ;-)... I am really sorry!
+  // There are rules and there are (valid) exceptions: It is ACTUALLY REALLY better to not use getters and setters here:
   public String elemName;
   public String value;
-
   public LinkedList<Reference> children = new LinkedList<Reference>();
-
   public Reference parent = null;
   public Reference nextSibling = null;
   public Reference prevSibling = null;
@@ -153,16 +151,16 @@ public class Reference {
 	  return this.children.getFirst();
   }
   
-  public void removeFieldFromChildren(String childrenName, String field) {
+  public void removeFieldFromChildren(String childrenName, String key) {
 	  
-	  Reference curRef = this.firstChild(childrenName);
+	  Reference curChild = this.firstChild(childrenName);
 	  
-	  while (curRef!=null) {
+	  while (curChild!=null) {
 	  
-		  Reference tmpRef = curRef.firstChild(field);
+		  Reference tmpRef = curChild.firstChild(key);
 		  if (tmpRef!=null)
-			  curRef.children.remove(tmpRef);
-		  curRef = curRef.nextSibling;
+			  curChild.children.remove(tmpRef);
+		  curChild = curChild.nextSibling;
 		  
 	  }  
 	 
@@ -187,7 +185,7 @@ public class Reference {
     // it is positioned at START_DOCUMENT event.
     eventType = xmlStreamReader.getEventType();
 
-	int depth = 0;
+//	int depth = 0;
 	
 	String curElem = "";
 	String curValue = "";
@@ -203,16 +201,16 @@ public class Reference {
 		    switch (eventType) {
 		        case XMLStreamConstants.START_ELEMENT:				        	
 		        	curElem = xmlStreamReader.getLocalName();
-		        		curTree = curTree.addChild(curElem);
+		        	curTree = curTree.addChild(curElem);
 		        	lastTagWasAnOpeningTag = true;
-		        	depth+=1;
+//		        	depth+=1;
 		            break;
 		        case XMLStreamConstants.END_ELEMENT:
 		        	if (lastTagWasAnOpeningTag)
 		        		curTree.value = curValue;
 		        	curTree = curTree.parent;     	
 		        	lastTagWasAnOpeningTag = false;
-		        	depth-=1;
+//		        	depth-=1;
 		            break;
 		        case XMLStreamConstants.PROCESSING_INSTRUCTION:
 		            break;

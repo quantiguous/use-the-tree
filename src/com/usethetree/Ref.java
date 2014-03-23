@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.Iterable;
+
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
@@ -32,12 +33,11 @@ import javax.xml.stream.XMLStreamWriter;
 
 public class Ref implements Iterable<Ref>{
 
-  // I don't care about getters and setters ;-)... I am really sorry!
+  // There are rules and there are (valid) exceptions: It is ACTUALLY REALLY better to not use getters and setters here:
   public String elemName;
   public String value;
-
-  public HashMap<String, Ref> children = new HashMap<String, Ref>();
-
+  public HashMap<Key, Ref> children = new HashMap<Key, Ref>();
+  private HashMap<String, Integer> repeatingElementsIndex = new HashMap<String, Integer>(); 
   public Ref parent = null;
   public Ref firstChild = null;
   public Ref lastChild = null;
@@ -63,15 +63,32 @@ public class Ref implements Iterable<Ref>{
   
   public Ref addChild(String elemName, String value) {
 	  Ref child = new Ref(this, elemName, value);
+	  
+	  int repeatingElemIndex = 0;			// The first (repeating) element with name XYZ
+	  Ref tmp = this.firstChild(elemName);
+	  Integer i = null;
+	  if (tmp!=null) {
+			  i = repeatingElementsIndex.get(elemName);
+		  if (i==null)
+			  repeatingElemIndex=1;					// The second
+		  else
+			  repeatingElemIndex=i+1;				// third, ...
+	  }
+	  
 	  if (!this.children.isEmpty()) {
 		  child.prevSibling=this.lastChild;
+		  this.lastChild.nextSibling=child;
 		  this.lastChild=child;
+		  
 	  } else {
 		  this.firstChild=child;
 		  this.lastChild=child;
 	  }
 		  
-	  this.children.put(elemName, child);
+	  this.children.put(new Key(elemName, repeatingElemIndex), child);
+	  if (repeatingElemIndex>0)
+		  repeatingElementsIndex.put(elemName, repeatingElemIndex);
+	  
       return child;
   }
 
@@ -81,23 +98,63 @@ public class Ref implements Iterable<Ref>{
   
   public Ref firstChild(String elemName) {
 
-	  return this.children.get(elemName);
+	  return this.children.get(new Key(elemName));
+
+  }
+  
+  public Ref child(String elemName, int index) {
+
+	  return this.children.get(new Key(elemName, index));
 
   }
   
   public Ref firstChild(String elemName, String key, String value) {
 	  
-	  for (Ref child : this) {
-		  if (child.elemName.equals(elemName)) {
-			  Ref curChild = child.firstChild(key);
-			  if (curChild!=null) {
-				  if (curChild.value.equals(value))
-					  return child;
-			  }
-		  }
+	  Ref child = this.firstChild(elemName);
+	  if (child!=null) {
+		  Ref curChild = child.firstChild(key);
+		  while (curChild!=null) {
+			  if (curChild.value.equals(value))
+				  return child;
+			  if (curChild.nextSibling!=null&&curChild.nextSibling.elemName.equals(key))
+				  curChild=curChild.nextSibling;
+			  else 
+				curChild=null;  
+		 }
 	  }
+	
 	  return null;
   }
+  
+public Ref set(String elemName) {
+	  
+	  Ref tmp =  this.firstChild(elemName);
+	  if (tmp==null)
+			return this.addChild(elemName);
+	  else
+		  return tmp;
+  }
+  
+  public Ref set(String elemName, String value) {
+	  
+	  Ref tmp = this.firstChild(elemName);
+	  if (tmp==null)
+			return this.addChild(elemName, value);
+	  else
+		  return tmp;
+  }
+  
+ public Ref add(String elemName, String value) {
+	  
+	  Ref tmp = this.firstChild(elemName);
+	  if (tmp==null)
+			return this.addChild(elemName, value);
+	  else {
+		   tmp.value = "" + (Integer.parseInt(tmp.value) + Integer.parseInt(value));
+		   return tmp;
+	  }	   
+  }
+  
   
   public Ref moveWhere(String elemName, String key, String value) {
 	  Ref tmp = firstChild(elemName, key, value);
@@ -107,16 +164,19 @@ public class Ref implements Iterable<Ref>{
 		  return this.addChild(elemName);
   }  
   
-  public void removeFieldFromChildren(String childrenName, String field) {
+  public void removeFieldFromChildren(String childrenName, String key) {
 	  
-	  Ref curRef = this.firstChild(childrenName);
+	  Ref curChild = this.firstChild(childrenName);
 	  
-	  while (curRef!=null) {
+	  while (curChild!=null) {
 	  
-		  Ref tmpRef = curRef.firstChild(field);
+		  Ref tmpRef = curChild.firstChild(key);
 		  if (tmpRef!=null)
-			  curRef.children.remove(tmpRef);
-		  curRef = curRef.nextSibling;
+			  curChild.children.remove(tmpRef);
+		  if (curChild.nextSibling!=null&&curChild.nextSibling.elemName.equals(childrenName))
+			  curChild=curChild.nextSibling;
+		  else 
+			  curChild=null;  
 		  
 	  }  
 	 
@@ -148,7 +208,7 @@ public class Ref implements Iterable<Ref>{
 	    // it is positioned at START_DOCUMENT event.
 	    eventType = xmlStreamReader.getEventType();
 
-		int depth = 0;
+//		int depth = 0;
 		
 		String curElem = "";
 		String curValue = "";
@@ -164,16 +224,16 @@ public class Ref implements Iterable<Ref>{
 			    switch (eventType) {
 			        case XMLStreamConstants.START_ELEMENT:				        	
 			        	curElem = xmlStreamReader.getLocalName();
-			        		curTree = curTree.addChild(curElem);
+			        	curTree = curTree.addChild(curElem);
 			        	lastTagWasAnOpeningTag = true;
-			        	depth+=1;
+//			        	depth+=1;
 			            break;
 			        case XMLStreamConstants.END_ELEMENT:
 			        	if (lastTagWasAnOpeningTag)
 			        		curTree.value = curValue;
 			        	curTree = curTree.parent;     	
 			        	lastTagWasAnOpeningTag = false;
-			        	depth-=1;
+//			        	depth-=1;
 			            break;
 			        case XMLStreamConstants.PROCESSING_INSTRUCTION:
 			            break;
