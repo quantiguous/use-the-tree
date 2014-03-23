@@ -8,38 +8,29 @@ import="com.usethetree.ReturnMsg" %>
 </head>
 <body>
 
-<h1>Welcome to use-the-tree.com</h1>
+<h1>use-the-tree</h1>
 
 The open source project <a href="https://github.com/mqsiuser/use-the-tree" target="_blank">use-the-tree</a> wants to provide fast, scalable and reliable message transformations.<br/>
 <br/>
-<font color="red">---------- currently under development! ----------</font><br/>
 
+
+<font color="red">---------- currently under development ----------</font><br/>
+<br/>
 <h2>Tree -&gt; tree</h2>
 <form action="XMLToXML" enctype="multipart/form-data" method="POST" >
-Simple: <a href="/SAP_IDOC.xml" download>SAP_IDOC.xml</a>, <a href="/simple.tsl" download>simple.tsl</a><br/>
-Simple Group By: <a href="/simpleGroupBy.xml" download>simpleGroupBy.xml</a>, <a href="/simpleGroupBy.tsl" download>simpleGroupBy.tsl</a><br/>
+Simple Group By: <a href="/GroupBy1.IN.xml" download>GroupBy1.IN.xml</a><br/>
+Multiple Group By: <a href="/GroupBy2.IN.xml" download>GroupBy2.IN.xml</a><br/>
+Composite Group By: <a href="/GroupBy3.IN.xml" download>GroupBy3.IN.xml</a><br/>
 <br/>
-    XML-File: <input type="file" name="file" value="" size="10" title=""><br/>
-    <textarea name="cmds" cols="100" rows="15">REF rInSubPosition=Position
-REF rOutSubPos=
-IF rInSubPosition IS NOT NULL
-	MOVE rOutSubPos TO +Pos
-	SET rOutSubPos.item=rInSubPosition.itemNumber
-	MOVE rInSubPosition TO SubPosition
-	WHILE rInSubPosition IS NOT NULL
-		MOVE rOutSubPos TO SubPos WHERE charge EQUALS rInSubPosition.batch
-		SET rOutSubPos.charge=rInSubPosition.batch
-		SET rOutSubPos.quantity+=rInSubPosition.qty
-		MOVE rOutSubPos PARENT
-		MOVE rInSubPosition NEXT SIBLING
-RETURN</textarea>
+    XML-File: <input type="file"  name="file" value="" size="10" title="">
+       <input type="checkbox" name="useHashMap" value="true"> use hash map<br/>
+    <font color="red"><%=request.getAttribute("errorText")!=null?request.getAttribute("errorText")+"<br/>":"" %></font>
     <br/>
     <input type="submit" name="submit" value="XML -> XML"><br/>
 
 </form>
-
-<% ReturnMsg.printReturnMsg(request, response); %>
 <br/>
+
 
 <h2>Tree -&gt; CSV</h3>
 <form action="ToCSV" enctype="multipart/form-data" method="POST" >
