@@ -119,7 +119,7 @@ public class XMLToXML extends HttpServlet {
 	        	rInPosition = rInPosition.firstChild("positions").firstChild("position");
 	        	while (rInPosition!=null) {
 	        		
-	        		rOutPos = rOutPos.FirstChildOrCreate( rInPosition.firstChild("materialNumber").value, "item" );			// *utilizes* hashmap (for grouping)
+	        		rOutPos = rOutPos.set( rInPosition.firstChild("materialNumber").value, "item" );			// *utilizes* hashmap (for grouping)
 	        		       			
 	        		rOutPos.set("MATNR").value = rInPosition.firstChild("materialNumber").value;
 	        		rOutPos.add("QTY", rInPosition.firstChild("quantity").value);
@@ -137,36 +137,26 @@ public class XMLToXML extends HttpServlet {
 	        		Ref rInPos = rInOrder.firstChild("position");
 	        		while(rInPos!=null) {
 	        	  
-	        			rOutPos = rOutPos.FirstChildOrCreate( rInPos.firstChild("materialNumber").value, "position" );		// *utilizes* hashmap (for grouping)
+	        			rOutPos = rOutPos.set( rInPos.firstChild("materialNumber").value, "position" );		// *utilizes* hashmap (for grouping)
 	        			
-	        			if (rOutPos.firstChild("materialNumber")==null)
-	        				rOutPos.addChild("materialNumber").value = rInPos.firstChild("materialNumber").value;
-	        			if (rOutPos.firstChild("quantity")==null)
-	        				rOutPos.addChild("quantity").value = rInPos.firstChild("quantity").value;
-	        			else
-		        			rOutPos.firstChild("quantity").value = "" + (Integer.parseInt(rOutPos.firstChild("quantity").value) + Integer.parseInt(rInPos.firstChild("quantity").value));
-		        		
+	        			rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
+	        			rOutPos.add("quantity", rInPos.firstChild("quantity").value);
+	        			
 	        			Ref rOutSubPos = rOutPos;
 	        			Ref rInSubPos = rInPos.firstChild("subPos");
 	        			while (rInSubPos!=null) {
 	        			
-	        				rOutSubPos = rOutSubPos.FirstChildOrCreate(rInSubPos.firstChild("batch").value, "subPos");		// *utilizes* hashmap (for grouping)
+	        				rOutSubPos = rOutSubPos.set(rInSubPos.firstChild("batch").value, "subPos");		// *utilizes* hashmap (for grouping)
 	        				
-	        				if (rOutSubPos.firstChild("batch")==null)
-		        				rOutSubPos.addChild("batch").value = rInSubPos.firstChild("batch").value;
-		        			if (rOutSubPos.firstChild("quantity")==null)
-		        				rOutSubPos.addChild("quantity").value = rInSubPos.firstChild("quantity").value;
-		        			else
-			        			rOutSubPos.firstChild("quantity").value = "" + (Integer.parseInt(rOutSubPos.firstChild("quantity").value) + Integer.parseInt(rInSubPos.firstChild("quantity").value));
-			        		
+		        			rOutSubPos.set("batch").value = rInSubPos.firstChild("batch").value;
+		        			rOutSubPos.add("quantity", rInSubPos.firstChild("quantity").value);
+
 		        			rOutSubPos = rOutSubPos.parent;
 			        		rInSubPos = rInSubPos.nextSibling;
-	        				
 	        			}
 	        			
 	        			rOutPos = rOutPos.parent;
 		        		rInPos = rInPos.nextSibling;
-	        			
 	        		}
 	        		
 	        		rOutOrder = rOutOrder.parent;
@@ -190,23 +180,15 @@ public class XMLToXML extends HttpServlet {
 						
 						String groupBy = rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value;
 						
-						rOutPos = rOutPos.FirstChildOrCreate( groupBy, "position" );		// *utilizes* hashmap (for grouping)
+						rOutPos = rOutPos.set( groupBy, "position" );		// *utilizes* hashmap (for grouping)
 						
-						if (rOutPos.firstChild("materialNumber")==null)
-	        				rOutPos.addChild("materialNumber").value = rInPos.firstChild("materialNumber").value;
-						if (rOutPos.firstChild("batch")==null)
-	        				rOutPos.addChild("batch").value = rInPos.firstChild("batch").value;
-						if (rOutPos.firstChild("quantity")==null)
-	        				rOutPos.addChild("quantity").value = rInPos.firstChild("quantity").value;
-						else
-		        			rOutPos.firstChild("quantity").value = "" + (Integer.parseInt(rOutPos.firstChild("quantity").value) + Integer.parseInt(rInPos.firstChild("quantity").value));
-		        		
+	        			rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
+	        			rOutPos.set("batch").value = rInPos.firstChild("batch").value;
+	        			rOutPos.add("quantity", rInPos.firstChild("quantity").value);
+						
 						rOutPos = rOutPos.parent;
-		        		rInPos = rInPos.nextSibling;
-						
+		        		rInPos = rInPos.nextSibling;		
 					}
-					
-					rOutPos.removeFieldFromChildren("position", "tmp");
 					
 					rOutOrder = rOutOrder.parent;
 	        		rInOrder = rInOrder.nextSibling;
