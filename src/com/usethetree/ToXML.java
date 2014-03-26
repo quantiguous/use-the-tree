@@ -53,6 +53,8 @@ public class ToXML extends HttpServlet {
         
         String contentType = request.getContentType();
         
+        String errorText = null;
+        
         if ((contentType != null) && (contentType.indexOf("multipart/form-data") >= 0)) {       
 
             String filename = "xml";
@@ -61,13 +63,13 @@ public class ToXML extends HttpServlet {
                 filePart = request.getPart("file");
                 filename = getFileName(filePart);
             } catch (IOException e1) {
-                returnMsg(request, response, "errorText", e1.getMessage());
+            	errorText = e1.getMessage();
             } catch (ServletException e) {
-                returnMsg(request, response, "errorText", e.getLocalizedMessage());
+            	errorText = e.getLocalizedMessage();
             }
             
             if (filename.isEmpty()) {
-            	 returnMsg(request, response, "errorText", "No filename found. Did you select a file?");
+            	errorText = "No filename found. Please select a file";
             }
             
             String encoding = request.getParameter("encoding");
@@ -91,7 +93,7 @@ public class ToXML extends HttpServlet {
             try {     
                  in = filePart.getInputStream();
             } catch (IOException e) {
-                  returnMsg(request, response, "errorText", e.getMessage());
+                  errorText = e.getMessage();
             }
             
             Scanner scanner = new Scanner(in, encoding);
@@ -102,7 +104,7 @@ public class ToXML extends HttpServlet {
             if (scanner.hasNext())
                 header = scanner.next();
             else
-            	returnMsg(request, response, "errorText", "No line found. Did you send an empty file?" );
+            	errorText = "No line found. Did you send an empty file?";
 
 			headers = header.split(valueSeparator);
 			for ( String h : headers ) {
@@ -177,29 +179,27 @@ public class ToXML extends HttpServlet {
 				writer.close();
 
 			} catch (IOException e) {
-				returnMsg(request, response, "errorText", e.getMessage());
+				errorText = e.getMessage();
 			} catch (XMLStreamException e1) {
-				 returnMsg(request, response, "errorText", e1.getMessage());
+				errorText = e1.getMessage();
 			}
 	        
         }
         
-    }
-
-    
-    private void returnMsg(HttpServletRequest request, HttpServletResponse response, String attributeName, String msg) {
-
-        request.setAttribute(attributeName, msg);
-        RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
-        try {
-           requestDispatcher.forward(request, response);
-        } catch (IOException e) {
-        	ReturnMsg.appendReturnMsg(response, "red", msg + "<br/><br/>" + e.getMessage());
-        } catch (ServletException e) {
-        	ReturnMsg.appendReturnMsg(response, "red", msg + "<br/><br/>" + e.getMessage());
+        if (errorText!=null) {
+            
+	    	request.setAttribute("toCSVErrorText", errorText);
+	    	RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
+	        try {
+	           requestDispatcher.forward(request, response);
+	        } catch (IOException | ServletException e) {
+	        	e.printStackTrace();
+	        }
         }
+        
     }
-       
+
+        
     
     private String getFileName(final Part part) {
         for (String content : part.getHeader("content-disposition").split(";")) {
@@ -210,39 +210,5 @@ public class ToXML extends HttpServlet {
         return null;
     }
 
-    private String concatenateElements(String[] strings) {
-
-    	return concatenateElements(strings, strings.length);
-
-    }
-    
-    private String concatenateElements(String[] strings, int maxCount) {
-
-    	String result = "";
-    	if (strings.length>0&&maxCount>0)
-    		result = strings[0];
-    	int i=1;
-    	while (i<strings.length && i<maxCount) {
-    		result += "." + strings[i];
-    		i++;
-    	}
-    	return result;
-
-    }
-    
-    private String concatenateElements(LinkedList<String> linkedList, int maxCount) {
-
-    	String result = "";
-    	Iterator<String> it = linkedList.iterator();
-    	if (it.hasNext()) 
-    		result = it.next();
-    	int i = 1;
-    	while (it.hasNext()&&i<maxCount) {
-    	  result += "." + it.next();
-    	  i++;
-    	}
-    	return result;
-
-    }
-
+   
 }

@@ -54,6 +54,8 @@ public class ToCSV extends HttpServlet {
         
         String contentType = request.getContentType();
         
+        String errorText = null;
+        
         if ((contentType != null) && (contentType.indexOf("multipart/form-data") >= 0)) {       
 
             String filename = "csv";
@@ -62,13 +64,13 @@ public class ToCSV extends HttpServlet {
                 filePart = request.getPart("file");
                 filename = getFileName(filePart);
             } catch (IOException e1) {
-                returnMsg(request, response, "errorText", e1.getMessage());
+            	errorText = e1.getMessage();
             } catch (ServletException e) {
-                returnMsg(request, response, "errorText", e.getLocalizedMessage());
+            	errorText = e.getMessage();
             }
             
             if (filename.isEmpty()) {
-            	 returnMsg(request, response, "errorText", "No filename found. Did you select a file?");
+            	errorText = "No filename found. Please select a file";
             }
             
             boolean useShortHeaderNames = request.getParameter("useShortHeaderNames")!=null?true:false;
@@ -91,14 +93,14 @@ public class ToCSV extends HttpServlet {
 			try {
 				in = filePart.getInputStream();
 			} catch (IOException e1) {
-				 returnMsg(request, response, "errorText", e1.getMessage());
+				errorText = e1.getMessage();
 			}
             XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
             XMLStreamReader xmlStreamReader = null;
 			try {
 				xmlStreamReader = xmlInputFactory.createXMLStreamReader(in);
 			} catch (XMLStreamException e1) {
-				 returnMsg(request, response, "errorText", e1.getMessage());
+				errorText = e1.getMessage();
 			}
 			
 			// when XMLStreamReader is created, 
@@ -220,7 +222,7 @@ public class ToCSV extends HttpServlet {
 				    }
 				}
 			} catch (XMLStreamException e) {
-				returnMsg(request, response, "errorText", e.getMessage());
+				errorText = e.getMessage();
 			}
 	        if (!curLineValues.isEmpty())
 				body.add(curLineValues);
@@ -253,27 +255,27 @@ public class ToCSV extends HttpServlet {
                 response.getOutputStream().write( result );
                 
             } catch (IOException e) {
-                returnMsg(request, response, "errorText", e.getMessage());
+                errorText = e.getMessage();
             }
          
 	        
         }
         
+        if (errorText!=null) {
+        
+	    	request.setAttribute("toCSVErrorText", errorText);
+	    	RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
+	        try {
+	           requestDispatcher.forward(request, response);
+	        } catch (IOException | ServletException e) {
+	        	e.printStackTrace();
+	        }
+        }
+        
     }
 
     
-    private void returnMsg(HttpServletRequest request, HttpServletResponse response, String attrName, String msg) {
-
-        request.setAttribute(attrName, msg);
-        RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
-        try {
-           requestDispatcher.forward(request, response);
-        } catch (IOException e) {
-        	ReturnMsg.appendReturnMsg(response, "red", msg + "<br/><br/>" + e.getMessage());
-        } catch (ServletException e) {
-        	ReturnMsg.appendReturnMsg(response, "red", msg + "<br/><br/>" + e.getMessage());
-        }
-    }
+   
 
     private String concatenateElements(LinkedList<String> linkedList) {
 

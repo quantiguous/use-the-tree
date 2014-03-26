@@ -61,14 +61,14 @@ public class Ref implements Iterable<Ref>{
 	  this.value = value;
 	 }
   
-  public Ref addChild(String elemName, String value) {
+  public Ref addChild(String key, String elemName, String value) {
 	  Ref child = new Ref(this, elemName, value);
 	  
 	  int repeatingElemIndex = 0;			// The first (repeating) element with name XYZ
-	  Ref tmp = this.firstChild(elemName);
+	  Ref tmp = this.firstChild(key);
 	  Integer i = null;
 	  if (tmp!=null) {
-			  i = repeatingElementsIndex.get(elemName);
+			  i = repeatingElementsIndex.get(key);
 		  if (i==null)
 			  repeatingElemIndex=1;					// The second
 		  else
@@ -85,21 +85,35 @@ public class Ref implements Iterable<Ref>{
 		  this.lastChild=child;
 	  }
 		  
-	  this.children.put(new Key(elemName, repeatingElemIndex), child);
+	  this.children.put(new Key(key, repeatingElemIndex), child);
 	  if (repeatingElemIndex>0)
-		  repeatingElementsIndex.put(elemName, repeatingElemIndex);
+		  repeatingElementsIndex.put(key, repeatingElemIndex);
 	  
       return child;
   }
+  
+  public Ref addChild(String key, String elemName) {
+	  return addChild(key, elemName, null);
+  }
 
   public Ref addChild(String elemName) {
-	  return addChild(elemName, null);
+	  return addChild(elemName, elemName, null);
   }
   
-  public Ref firstChild(String elemName) {
+  public Ref FirstChildOrCreate(String key, String elemName) {			// move to first child OR CREATE
 
-	  return this.children.get(new Key(elemName));
+	  Ref tmp = this.children.get(new Key(key));
+	  if (tmp==null)
+		  return this.addChild(key, elemName);
+	  else
+		  return tmp;
+	  
+  }
+  
+  public Ref firstChild(String key) {					// move to first child OR NULL
 
+	 return this.children.get(new Key(key));
+	  
   }
   
   public Ref child(String elemName, int index) {
@@ -135,11 +149,11 @@ public Ref set(String elemName) {
 		  return tmp;
   }
   
-  public Ref set(String elemName, String value) {
+  public Ref set(String key, String elemName, String value) {
 	  
-	  Ref tmp = this.firstChild(elemName);
+	  Ref tmp = this.firstChild(key);
 	  if (tmp==null)
-			return this.addChild(elemName, value);
+			return this.addChild(key, elemName, value);
 	  else
 		  return tmp;
   }
@@ -148,7 +162,7 @@ public Ref set(String elemName) {
 	  
 	  Ref tmp = this.firstChild(elemName);
 	  if (tmp==null)
-			return this.addChild(elemName, value);
+			return this.addChild(elemName, elemName, value);
 	  else {
 		   tmp.value = "" + (Integer.parseInt(tmp.value) + Integer.parseInt(value));
 		   return tmp;
