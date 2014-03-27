@@ -2,13 +2,13 @@ package com.usethetree;
 
 import java.util.Iterator;
 
-public class ChildrenIterator implements Iterator<Ref> {
+public class ChildrenIterator implements Iterator<Reference> {
 	
-	Ref parent = null;
-	Ref next = null;
+	Reference parent = null;
+	Reference next = null;
 	
 
-	public ChildrenIterator(Ref parent) {
+	public ChildrenIterator(Reference parent) {
 	    
 		this.parent = parent;
 		this.next = parent.firstChild;
@@ -22,11 +22,11 @@ public class ChildrenIterator implements Iterator<Ref> {
 	}
 
 	@Override
-	public Ref next() {
+	public Reference next() {
 		
 //		return next = next.nextSibling;
 		
-		Ref nextReturn = next;
+		Reference nextReturn = next;
 		next = next.nextSibling;
 		return nextReturn;
 	}

@@ -17,30 +17,34 @@
 
 package com.usethetree;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedList;
+import java.lang.Iterable;
+
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamWriter;
-import javax.servlet.http.HttpServletResponse;
 
-
-public class Reference {
+public class Reference implements Iterable<Reference>{
 
   // There are rules and there are (valid) exceptions: It is ACTUALLY REALLY better to not use getters and setters here:
   public String elemName;
   public String value;
-  public LinkedList<Reference> children = new LinkedList<Reference>();
+  public HashMap<Key, Reference> children = new HashMap<Key, Reference>();
+  private HashMap<String, Integer> repeatingElementsIndex = new HashMap<String, Integer>(); 
   public Reference parent = null;
+  public Reference firstChild = null;
+  public Reference lastChild = null;
   public Reference nextSibling = null;
   public Reference prevSibling = null;
-  
-  public Reference prevGroupingSibling = null;		//TODO
-  
+   
+ 
 
   public Reference(String elemName) {
     this.elemName = elemName;
@@ -57,42 +61,86 @@ public class Reference {
 	  this.value = value;
 	 }
   
-  public Reference(Reference parent, String elemName) {
-	  this.parent = parent;
-	  this.elemName = elemName;
-	 }
-  
-  
-  public Reference addChild(String elemName, String value) {
+  public Reference addChild(String key, String elemName, String value) {
 	  Reference child = new Reference(this, elemName, value);
-	  if (!this.children.isEmpty()) {
-		  child.prevSibling=this.children.getLast();
-		  this.children.getLast().nextSibling=child;
+	  
+	  int repeatingElemIndex = 0;			// The first (repeating) element with name XYZ
+	  Reference tmp = this.firstChild(key);
+	  Integer i = null;
+	  if (tmp!=null) {
+			  i = repeatingElementsIndex.get(key);
+		  if (i==null)
+			  repeatingElemIndex=1;					// The second
+		  else
+			  repeatingElemIndex=i+1;				// third, ...
 	  }
-	  this.children.add(child);
+	  
+	  if (!this.children.isEmpty()) {
+		  child.prevSibling=this.lastChild;
+		  this.lastChild.nextSibling=child;
+		  this.lastChild=child;
+		  
+	  } else {
+		  this.firstChild=child;
+		  this.lastChild=child;
+	  }
+		  
+	  this.children.put(new Key(key, repeatingElemIndex), child);
+	  if (repeatingElemIndex>0)
+		  repeatingElementsIndex.put(key, repeatingElemIndex);
+	  
       return child;
+  }
+  
+  public Reference addChild(String key, String elemName) {
+	  return addChild(key, elemName, null);
   }
 
   public Reference addChild(String elemName) {
-	  Reference child = new Reference(this, elemName);
-	  if (!this.children.isEmpty()) {
-		  child.prevSibling=this.children.getLast();
-		  this.children.getLast().nextSibling=child;
-	  }
-	  this.children.add(child);
-      return child;
+	  return addChild(elemName, elemName, null);
   }
   
-  public Reference firstChild(String elemName) {
+  public Reference set(String key, String elemName) {			// move to first child OR CREATE
+
+	  Reference tmp = this.children.get(new Key(key));
+	  if (tmp==null)
+		  return this.addChild(key, elemName);
+	  else
+		  return tmp;
 	  
-	  for (Reference child : this.children) {
-		  if (child.elemName.equals(elemName))
-		  return child;
+  }
+  
+  public Reference firstChild(String key) {					// move to first child OR NULL
+
+	 return this.children.get(new Key(key));
+	  
+  }
+  
+  public Reference child(String elemName, int index) {
+
+	  return this.children.get(new Key(elemName, index));
+
+  }
+  
+  public Reference firstChild(String elemName, String key, String value) {
+	  
+	  Reference child = this.firstChild(elemName);
+	  if (child!=null) {
+		  Reference curChild = child.firstChild(key);
+		  while (curChild!=null) {
+			  if (curChild.value.equals(value))
+				  return child;
+			  if (curChild.nextSibling!=null&&curChild.nextSibling.elemName.equals(key))
+				  curChild=curChild.nextSibling;
+			  else 
+				curChild=null;  
+		 }
 	  }
+	
 	  return null;
   }
   
-  public Reference set(String elemName) {
+public Reference set(String elemName) {
 	  
 	  Reference tmp =  this.firstChild(elemName);
 	  if (tmp==null)
@@ -101,42 +149,26 @@ public class Reference {
 		  return tmp;
   }
   
-  public Reference set(String elemName, String value) {
+  public Reference set(String key, String elemName, String value) {
 	  
-	  Reference tmp = this.firstChild(elemName);
+	  Reference tmp = this.firstChild(key);
 	  if (tmp==null)
-			return this.addChild(elemName, value);
+			return this.addChild(key, elemName, value);
 	  else
 		  return tmp;
   }
   
-  
-  public Reference add(String elemName, String value) {
+ public Reference add(String elemName, String value) {
 	  
 	  Reference tmp = this.firstChild(elemName);
 	  if (tmp==null)
-			return this.addChild(elemName, value);
+			return this.addChild(elemName, elemName, value);
 	  else {
 		   tmp.value = "" + (Integer.parseInt(tmp.value) + Integer.parseInt(value));
 		   return tmp;
 	  }	   
   }
   
-  
-  
-  public Reference firstChild(String elemName, String key, String value) {
-	  
-	  for (Reference child : this.children) {
-		  if (child.elemName.equals(elemName)) {
-			  Reference curChild = child.firstChild(key);
-			  if (curChild!=null) {
-				  if (curChild.value.equals(value))
-					  return child;
-			  }
-		  }
-	  }
-	  return null;
-  }
   
   public Reference moveWhere(String elemName, String key, String value) {
 	  Reference tmp = firstChild(elemName, key, value);
@@ -145,11 +177,6 @@ public class Reference {
 	  else
 		  return this.addChild(elemName);
   }  
-	  
-  
-  public Reference firstChild() {
-	  return this.children.getFirst();
-  }
   
   public void removeFieldFromChildren(String childrenName, String key) {
 	  
@@ -157,10 +184,13 @@ public class Reference {
 	  
 	  while (curChild!=null) {
 	  
-		  Reference tmpRef = curChild.firstChild(key);
-		  if (tmpRef!=null)
-			  curChild.children.remove(tmpRef);
-		  curChild = curChild.nextSibling;
+		  Reference tmpReference = curChild.firstChild(key);
+		  if (tmpReference!=null)
+			  curChild.children.remove(tmpReference);
+		  if (curChild.nextSibling!=null&&curChild.nextSibling.elemName.equals(childrenName))
+			  curChild=curChild.nextSibling;
+		  else 
+			  curChild=null;  
 		  
 	  }  
 	 
@@ -171,76 +201,82 @@ public class Reference {
   public Reference addNextSibling(String elemName) {
 	  return this.parent.addChild(elemName);
   }
+
   
-
-  public static Reference createReferenceFromXML(InputStream in) throws XMLStreamException  {
-	
-    XMLStreamReader xmlStreamReader = null;
-    int eventType = 0;
-    XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
-
-    xmlStreamReader = xmlInputFactory.createXMLStreamReader(in);	
-		
-    // when XMLStreamReader is created, 
-    // it is positioned at START_DOCUMENT event.
-    eventType = xmlStreamReader.getEventType();
-
-//	int depth = 0;
-	
-	String curElem = "";
-	String curValue = "";
-	final Reference inputRoot = new Reference("InputRoot");	
-	
-	Reference curTree = inputRoot;
-	boolean lastTagWasAnOpeningTag = false;
-	
-  	
-		while(xmlStreamReader.hasNext()) {
-		    eventType = xmlStreamReader.next();
-		    
-		    switch (eventType) {
-		        case XMLStreamConstants.START_ELEMENT:				        	
-		        	curElem = xmlStreamReader.getLocalName();
-		        	curTree = curTree.addChild(curElem);
-		        	lastTagWasAnOpeningTag = true;
-//		        	depth+=1;
-		            break;
-		        case XMLStreamConstants.END_ELEMENT:
-		        	if (lastTagWasAnOpeningTag)
-		        		curTree.value = curValue;
-		        	curTree = curTree.parent;     	
-		        	lastTagWasAnOpeningTag = false;
-//		        	depth-=1;
-		            break;
-		        case XMLStreamConstants.PROCESSING_INSTRUCTION:
-		            break;
-		        case XMLStreamConstants.CHARACTERS:
-		        	curValue = xmlStreamReader.getText();
-		            break;
-		        case XMLStreamConstants.COMMENT:
-		            break;
-		        case XMLStreamConstants.START_DOCUMENT:
-		            break;
-		        case XMLStreamConstants.ATTRIBUTE:
-		        	break;
-		        case XMLStreamConstants.END_DOCUMENT:
-		            break;
-		        case XMLStreamConstants.ENTITY_REFERENCE:
-		            break;
-		        case XMLStreamConstants.DTD:
-		            break;
-		        case XMLStreamConstants.CDATA:
-		            break;
-		        case XMLStreamConstants.SPACE:
-		            break;
-		        default:   	
-		    }
-		}
-		return inputRoot;
-
+  @Override
+  public Iterator<Reference> iterator() {
+	  
+      return new ChildrenIterator(this);
   }
   
   
+  public static Reference createReferenceFromXML(InputStream in) throws XMLStreamException  {
+		
+	    XMLStreamReader xmlStreamReader = null;
+	    int eventType = 0;
+	    XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
+
+	    xmlStreamReader = xmlInputFactory.createXMLStreamReader(in);	
+			
+	    // when XMLStreamReader is created, 
+	    // it is positioned at START_DOCUMENT event.
+	    eventType = xmlStreamReader.getEventType();
+
+//		int depth = 0;
+		
+		String curElem = "";
+		String curValue = "";
+		final Reference inputRoot = new Reference("InputRoot");	
+		
+		Reference curTree = inputRoot;
+		boolean lastTagWasAnOpeningTag = false;
+		
+	  	
+			while(xmlStreamReader.hasNext()) {
+			    eventType = xmlStreamReader.next();
+			    
+			    switch (eventType) {
+			        case XMLStreamConstants.START_ELEMENT:				        	
+			        	curElem = xmlStreamReader.getLocalName();
+			        	curTree = curTree.addChild(curElem);
+			        	lastTagWasAnOpeningTag = true;
+//			        	depth+=1;
+			            break;
+			        case XMLStreamConstants.END_ELEMENT:
+			        	if (lastTagWasAnOpeningTag)
+			        		curTree.value = curValue;
+			        	curTree = curTree.parent;     	
+			        	lastTagWasAnOpeningTag = false;
+//			        	depth-=1;
+			            break;
+			        case XMLStreamConstants.PROCESSING_INSTRUCTION:
+			            break;
+			        case XMLStreamConstants.CHARACTERS:
+			        	curValue = xmlStreamReader.getText();
+			            break;
+			        case XMLStreamConstants.COMMENT:
+			            break;
+			        case XMLStreamConstants.START_DOCUMENT:
+			            break;
+			        case XMLStreamConstants.ATTRIBUTE:
+			        	break;
+			        case XMLStreamConstants.END_DOCUMENT:
+			            break;
+			        case XMLStreamConstants.ENTITY_REFERENCE:
+			            break;
+			        case XMLStreamConstants.DTD:
+			            break;
+			        case XMLStreamConstants.CDATA:
+			            break;
+			        case XMLStreamConstants.SPACE:
+			            break;
+			        default:   	
+			    }
+			}
+			return inputRoot;
+
+	  }
+
   public static void writeXMLFromReference(Reference ref, String filename, HttpServletResponse response) throws XMLStreamException, IOException  {
 		
 
@@ -269,7 +305,7 @@ public class Reference {
 			}	
 			
 			if (!backingOut&&!ref.children.isEmpty()) {
-				ref = ref.children.getFirst();
+				ref = ref.firstChild;
 			} else {
 				if (ref.nextSibling!=null) {
 					ref = ref.nextSibling;
@@ -290,9 +326,6 @@ public class Reference {
 		writer.flush();
 		writer.close();
 
-  	}
-
-  
-  
+	}
   
 }
