@@ -172,16 +172,16 @@ public class XMLToXML extends HttpServlet {
 						
 						rOutPos = rOutPos.set( groupBy, "position" );		// use hashmap (for grouping)
 						
-	        			rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
-	        			rOutPos.set("batch").value = rInPos.firstChild("batch").value;
-	        			rOutPos.add("quantity", rInPos.firstChild("quantity").value);
+	        				rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
+	        				rOutPos.set("batch").value = rInPos.firstChild("batch").value;
+	        				rOutPos.add("quantity", rInPos.firstChild("quantity").value);
 						
 						rOutPos = rOutPos.parent;
-		        		rInPos = rInPos.nextSibling;		
+		        			rInPos = rInPos.nextSibling;		
 					}
 					
 					rOutOrder = rOutOrder.parent;
-	        		rInOrder = rInOrder.nextSibling;
+	        			rInOrder = rInOrder.nextSibling;
 				}
 	        	
 	      	
