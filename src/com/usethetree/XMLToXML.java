@@ -155,34 +155,34 @@ public class XMLToXML extends HttpServlet {
 			
 	        } else if (errorText==null&&filename.startsWith("GroupBy3.IN")) {
 				
-				outputRoot.addChild("message").addChild("date").value = inputRoot.firstChild("message").firstChild("header").firstChild("date").value + " " + inputRoot.firstChild("message").firstChild("header").firstChild("time").value;
+			outputRoot.addChild("message").addChild("date").value = inputRoot.firstChild("message").firstChild("header").firstChild("date").value + " " + inputRoot.firstChild("message").firstChild("header").firstChild("time").value;
 				
-				Reference rOutOrder = outputRoot;
-				Reference rInOrder = inputRoot.firstChild("message").firstChild("orders").firstChild("order");
-				while (rInOrder!=null) {
+			Reference rOutOrder = outputRoot;
+			Reference rInOrder = inputRoot.firstChild("message").firstChild("orders").firstChild("order");
+			while (rInOrder!=null) {
 				
-					rOutOrder = rOutOrder.firstChild("message").addChild("orders").addChild("order");
-					rOutOrder.addChild("orderNumber").value = rInOrder.firstChild("orderNumber").value;
+				rOutOrder = rOutOrder.firstChild("message").addChild("orders").addChild("order");
+				rOutOrder.addChild("orderNumber").value = rInOrder.firstChild("orderNumber").value;
 				
-					Reference rOutPos = rOutOrder.addChild("positions");;
-					Reference rInPos = rInOrder.firstChild("positions").firstChild("position");
-					while (rInPos!=null) {
+				Reference rOutPos = rOutOrder.addChild("positions");;
+				Reference rInPos = rInOrder.firstChild("positions").firstChild("position");
+				while (rInPos!=null) {
 						
-						String groupBy = rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value;
+					String groupBy = rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value;
 						
-						rOutPos = rOutPos.set( groupBy, "position" );		// use hashmap (for grouping)
+					rOutPos = rOutPos.set( groupBy, "position" );		// use hashmap (for grouping)
 						
-	        				rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
-	        				rOutPos.set("batch").value = rInPos.firstChild("batch").value;
-	        				rOutPos.add("quantity", rInPos.firstChild("quantity").value);
+	        			rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
+	        			rOutPos.set("batch").value = rInPos.firstChild("batch").value;
+	        			rOutPos.add("quantity", rInPos.firstChild("quantity").value);
 						
-						rOutPos = rOutPos.parent;
-		        			rInPos = rInPos.nextSibling;		
-					}
-					
-					rOutOrder = rOutOrder.parent;
-	        			rInOrder = rInOrder.nextSibling;
+					rOutPos = rOutPos.parent;
+		       			rInPos = rInPos.nextSibling;		
 				}
+					
+				rOutOrder = rOutOrder.parent;
+        			rInOrder = rInOrder.nextSibling;
+			}
 	        	
 	      	
 	        } else
