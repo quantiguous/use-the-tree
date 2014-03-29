@@ -97,57 +97,57 @@ public class XMLToXML extends HttpServlet {
 	        
 	        } else if (errorText==null&&filename.startsWith("GroupBy1.IN")) {
 		        
-	        	Reference rInPosition = inputRoot.firstChild.firstChild;    // message.header
-	        	Reference rOutPos = outputRoot.addChild("msg");
-	        	rOutPos.addChild("timestamp").value = rInPosition.firstChild("date").value + " " + rInPosition.firstChild("time").value;
-	        	rInPosition = inputRoot.firstChild("message").firstChild("orders").firstChild("order");
-	        	rOutPos.addChild("ordNo").value = rInPosition.firstChild("orderNumber").value;
-	        	rInPosition = rInPosition.firstChild("positions").firstChild("position");
-	        	while (rInPosition!=null) {
-	        		
-	        		rOutPos = rOutPos.set( rInPosition.firstChild("materialNumber").value, "item" );		// use hashmap (for grouping)
-	        		       			
-	        		rOutPos.set("MATNR").value = rInPosition.firstChild("materialNumber").value;
-	        		rOutPos.add("QTY", rInPosition.firstChild("quantity").value);
-	        		
-	        		rOutPos = rOutPos.parent;
-	        		rInPosition = rInPosition.nextSibling;
-	        	}
+				Reference rInPosition = inputRoot.firstChild.firstChild;    // message.header
+				Reference rOutPos = outputRoot.addChild("msg");
+				rOutPos.addChild("timestamp").value = rInPosition.firstChild("date").value + " " + rInPosition.firstChild("time").value;
+				rInPosition = inputRoot.firstChild("message").firstChild("orders").firstChild("order");
+				rOutPos.addChild("ordNo").value = rInPosition.firstChild("orderNumber").value;
+				rInPosition = rInPosition.firstChild("positions").firstChild("position");
+				while (rInPosition!=null) {
+					
+					rOutPos = rOutPos.set( rInPosition.firstChild("materialNumber").value, "item" );		// use hashmap (for grouping)
+					       			
+					rOutPos.set("MATNR").value = rInPosition.firstChild("materialNumber").value;
+					rOutPos.add("QTY", rInPosition.firstChild("quantity").value);
+					
+					rOutPos = rOutPos.parent;
+					rInPosition = rInPosition.nextSibling;
+				}
 	        
 	        } else if (errorText==null&&filename.startsWith("GroupBy2.IN")) {
 	       	    
-	        	Reference rOutOrder = outputRoot.addChild("message").addChild("order");
-	        	Reference rInOrder = inputRoot.firstChild("message").firstChild("order");
-	        	while (rInOrder!=null) {
-	        		Reference rOutPos = rOutOrder;
-	        		Reference rInPos = rInOrder.firstChild("position");
-	        		while(rInPos!=null) {
-	        	  
-	        			rOutPos = rOutPos.set( rInPos.firstChild("materialNumber").value, "position" );		// use hashmap (for grouping)
-	        			
-	        			rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
-	        			rOutPos.add("quantity", rInPos.firstChild("quantity").value);
-	        			
-	        			Reference rOutSubPos = rOutPos;
-	        			Reference rInSubPos = rInPos.firstChild("subPos");
-	        			while (rInSubPos!=null) {
-	        			
-	        				rOutSubPos = rOutSubPos.set(rInSubPos.firstChild("batch").value, "subPos");		// use hashmap (for grouping)
-	        				
-		        			rOutSubPos.set("batch").value = rInSubPos.firstChild("batch").value;
-		        			rOutSubPos.add("quantity", rInSubPos.firstChild("quantity").value);
-
-		        			rOutSubPos = rOutSubPos.parent;
-			        		rInSubPos = rInSubPos.nextSibling;
-	        			}
-	        			
-	        			rOutPos = rOutPos.parent;
-		        		rInPos = rInPos.nextSibling;
-	        		}
-	        		
-	        		rOutOrder = rOutOrder.parent;
-	        		rInOrder = rInOrder.nextSibling;
-	        	}
+				Reference rOutOrder = outputRoot.addChild("message").addChild("order");
+				Reference rInOrder = inputRoot.firstChild("message").firstChild("order");
+				while (rInOrder!=null) {
+					Reference rOutPos = rOutOrder;
+					Reference rInPos = rInOrder.firstChild("position");
+					while(rInPos!=null) {
+				  
+						rOutPos = rOutPos.set( rInPos.firstChild("materialNumber").value, "position" );		// use hashmap (for grouping)
+						
+						rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
+						rOutPos.add("quantity", rInPos.firstChild("quantity").value);
+						
+						Reference rOutSubPos = rOutPos;
+						Reference rInSubPos = rInPos.firstChild("subPos");
+						while (rInSubPos!=null) {
+						
+							rOutSubPos = rOutSubPos.set(rInSubPos.firstChild("batch").value, "subPos");		// use hashmap (for grouping)
+							
+							rOutSubPos.set("batch").value = rInSubPos.firstChild("batch").value;
+							rOutSubPos.add("quantity", rInSubPos.firstChild("quantity").value);
+				
+							rOutSubPos = rOutSubPos.parent;
+				    		rInSubPos = rInSubPos.nextSibling;
+						}
+						
+						rOutPos = rOutPos.parent;
+						rInPos = rInPos.nextSibling;
+					}
+					
+					rOutOrder = rOutOrder.parent;
+					rInOrder = rInOrder.nextSibling;
+				}
 			
 	        } else if (errorText==null&&filename.startsWith("GroupBy3.IN")) {
 				
@@ -168,16 +168,16 @@ public class XMLToXML extends HttpServlet {
 						
 						rOutPos = rOutPos.set( groupBy, "position" );		// use hashmap (for grouping)
 						
-	        			rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
-	        			rOutPos.set("batch").value = rInPos.firstChild("batch").value;
-	        			rOutPos.add("quantity", rInPos.firstChild("quantity").value);
+						rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
+						rOutPos.set("batch").value = rInPos.firstChild("batch").value;
+						rOutPos.add("quantity", rInPos.firstChild("quantity").value);
 						
 						rOutPos = rOutPos.parent;
-		        		rInPos = rInPos.nextSibling;		
+						rInPos = rInPos.nextSibling;		
 					}
 					
 					rOutOrder = rOutOrder.parent;
-	        		rInOrder = rInOrder.nextSibling;
+					rInOrder = rInOrder.nextSibling;
 				}
 	        	
 	      	
