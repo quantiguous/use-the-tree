@@ -53,7 +53,7 @@ public class ToXML extends HttpServlet {
         
         String contentType = request.getContentType();
         
-        String errorText = null;
+        String errorText = null;			// track and trace an error-variable (old style :-))
         
         if ((contentType != null) && (contentType.indexOf("multipart/form-data") >= 0)) {       
 
@@ -71,7 +71,7 @@ public class ToXML extends HttpServlet {
             if (filename.isEmpty()) {
             	errorText = "No filename found. Please select a file";
             }
-            
+
             String encoding = request.getParameter("encoding");
             String valueSeparator = request.getParameter("valueSeparator");
             String lineDelimiter = request.getParameter("lineDelimiter");
@@ -89,114 +89,122 @@ public class ToXML extends HttpServlet {
             boolean hasChanged=false;
             
             InputStream in = null;
-           
-            try {     
-                 in = filePart.getInputStream();
-            } catch (IOException e) {
-                  errorText = e.getMessage();
+            
+            if (errorText==null) {
+	            try {     
+	                 in = filePart.getInputStream();
+	            } catch (IOException e) {
+	                  errorText = e.getMessage();
+	            }
             }
             
-            Scanner scanner = new Scanner(in, encoding);
-            //scanner.useDelimiter(lineDelimiter);
-            scanner.useDelimiter("\r\n");
-
-            String header = null;
-            if (scanner.hasNext())
-                header = scanner.next();
-            else
-            	errorText = "No line found. Did you send an empty file?";
-
-			headers = header.split(valueSeparator);
-			for ( String h : headers ) {
-				curElemStack = h.split("\\.");
-				headers2.add(curElemStack);	
-			}
-	
-			try {
-				
-				StringBuilder type = new StringBuilder("attachment; filename=");
-				type.append(filename + ".xml");
-				
-				//response.setContentLength( - not known, since writing out streaming - );
-				response.setContentType("application/octet-stream");
-				response.setHeader("Content-Disposition", type.toString());
-				XMLOutputFactory factory = XMLOutputFactory.newInstance();
-				XMLStreamWriter writer = factory.createXMLStreamWriter(
-			               response.getOutputStream() );
-				
-				writer.writeStartDocument();
-				
-				while(scanner.hasNext()) {
-					curLine = scanner.next();
-					prevValues = values;
-					values = curLine.split(valueSeparator);
-					curValue=null;
-					hasChanged=false;
-	
-					prevHeader = null;
-					for (int i=0; i<values.length; i++) {
-						curValue = values[i];
-						boolean isEqual = prevValues!=null&&curValue.equals(prevValues[i]);
-						if (!isEqual||hasChanged) {
-							hasChanged=true;
-							if (i>0)
-								prevHeader = headers2.get(i-1);
-							curHeader = headers2.get(i);
-							if (prevHeader!=null) {		
-								int i2 = 0;
-								boolean doLoop=true;
-								while (doLoop&&i2<curHeader.length){
-									if (!curHeader[i2].equals(prevHeader[i2]))
-										doLoop=false;
-									else
-										i2++;
-								}
-								int start = curDepth-1;
-								for (int j=start; j>=i2; j--) {
-									writer.writeEndElement();
-									curDepth-=1;
-								}
-							}
-							
-							
-							for (int j=curDepth; j<curHeader.length; j++) {
-								writer.writeStartElement(curHeader[j]);
-								curDepth+=1;
-							}
-							writer.writeCharacters(curValue);
-							writer.writeEndElement();
-							curDepth-=1;
-						}
-						
-					}
-				}
-				
-//				for (int j=curDepth; j>=0; j--)
-//					writer.writeEndElement();
-				
-				writer.writeEndDocument();
-				writer.flush();
-				writer.close();
-
-			} catch (IOException e) {
-				errorText = e.getMessage();
-			} catch (XMLStreamException e1) {
-				errorText = e1.getMessage();
-			}
-	        
-        }
-        
-        if (errorText!=null) {
+            Scanner scanner = null;
             
-	    	request.setAttribute("toCSVErrorText", errorText);
-	    	RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
-	        try {
-	           requestDispatcher.forward(request, response);
-	        } catch (IOException | ServletException e) {
-	        	e.printStackTrace();
+            if (errorText==null) {
+	            
+            	scanner = new Scanner(in, encoding);
+                 
+	            //scanner.useDelimiter(lineDelimiter);
+	            scanner.useDelimiter("\r\n");
+	
+	            String header = null;
+	            if (scanner.hasNext())
+	                header = scanner.next();
+	            else
+	            	errorText = "No line found. Did you send an empty file?";
+	
+				headers = header.split(valueSeparator);
+				for ( String h : headers ) {
+					curElemStack = h.split("\\.");
+					headers2.add(curElemStack);	
+				}
+            }
+            
+			if (errorText==null) {
+				try {
+					
+					StringBuilder type = new StringBuilder("attachment; filename=");
+					type.append(filename + ".xml");
+					
+					//response.setContentLength( - not known, since writing out streaming - );
+					response.setContentType("application/octet-stream");
+					response.setHeader("Content-Disposition", type.toString());
+					XMLOutputFactory factory = XMLOutputFactory.newInstance();
+					XMLStreamWriter writer = factory.createXMLStreamWriter(
+				               response.getOutputStream() );
+					
+					writer.writeStartDocument();
+					
+					while(scanner.hasNext()) {
+						curLine = scanner.next();
+						prevValues = values;
+						values = curLine.split(valueSeparator);
+						curValue=null;
+						hasChanged=false;
+		
+						prevHeader = null;
+						for (int i=0; i<values.length; i++) {
+							curValue = values[i];
+							boolean isEqual = prevValues!=null&&curValue.equals(prevValues[i]);
+							if (!isEqual||hasChanged) {
+								hasChanged=true;
+								if (i>0)
+									prevHeader = headers2.get(i-1);
+								curHeader = headers2.get(i);
+								if (prevHeader!=null) {		
+									int i2 = 0;
+									boolean doLoop=true;
+									while (doLoop&&i2<curHeader.length){
+										if (!curHeader[i2].equals(prevHeader[i2]))
+											doLoop=false;
+										else
+											i2++;
+									}
+									int start = curDepth-1;
+									for (int j=start; j>=i2; j--) {
+										writer.writeEndElement();
+										curDepth-=1;
+									}
+								}
+								
+								
+								for (int j=curDepth; j<curHeader.length; j++) {
+									writer.writeStartElement(curHeader[j]);
+									curDepth+=1;
+								}
+								writer.writeCharacters(curValue);
+								writer.writeEndElement();
+								curDepth-=1;
+							}
+							
+						}
+					}
+					
+	//				for (int j=curDepth; j>=0; j--)
+	//					writer.writeEndElement();
+					
+					writer.writeEndDocument();
+					writer.flush();
+					writer.close();
+	
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (XMLStreamException e1) {
+					e1.printStackTrace();
+				}
+			} else {
+	            
+		    	request.setAttribute("toXMLErrorText", errorText);
+		    	RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
+		        try {
+		           requestDispatcher.forward(request, response);
+		        } catch (IOException | ServletException e) {
+		        	e.printStackTrace();
+		        }
 	        }
+			
         }
-        
+    
     }
 
         

@@ -54,7 +54,7 @@ public class ToCSV extends HttpServlet {
         
         String contentType = request.getContentType();
         
-        String errorText = null;
+        String errorText = null; 			// track and trace an error-variable (old style :-))
         
         if ((contentType != null) && (contentType.indexOf("multipart/form-data") >= 0)) {       
 
@@ -117,7 +117,7 @@ public class ToCSV extends HttpServlet {
         	
 	        try {
 	        	
-				while(xmlStreamReader.hasNext()) {
+				while(errorText==null&&xmlStreamReader.hasNext()) {
 				    eventType = xmlStreamReader.next();
 				    
 				    switch (eventType) {
@@ -224,17 +224,17 @@ public class ToCSV extends HttpServlet {
 			} catch (XMLStreamException e) {
 				errorText = e.getMessage();
 			}
-	        if (!curLineValues.isEmpty())
+	        if (errorText==null&&!curLineValues.isEmpty())
 				body.add(curLineValues);
             
-	        if (writeHeaderLine)
+	        if (errorText==null&&writeHeaderLine)
 		        if (useShortHeaderNames)
 		        	body.add(0,headerShort);
 		        else
 		        	body.add(0, header);     
 	        
             StringBuffer buffer = new StringBuffer();
-            for (int i = 0; i < body.size(); i++) {
+            for (int i = 0; errorText==null&&i<body.size(); i++) {
                 ArrayList<String> curRow = body.get(i);
                 buffer.append(curRow.get(0));
                 for (int j = 1; j < curRow.size(); j++) {
@@ -245,32 +245,35 @@ public class ToCSV extends HttpServlet {
             }
             byte[] result = String.valueOf(buffer).getBytes(Charset.forName(encoding));
             
-          
-            StringBuilder type = new StringBuilder("attachment; filename=");
-            type.append(filename + ".csv");
-            try {
-                response.setContentLength(result.length);
-                response.setContentType("application/octet-stream");
-                response.setHeader("Content-Disposition", type.toString());
-                response.getOutputStream().write( result );
+            if (errorText==null) {
                 
-            } catch (IOException e) {
-                errorText = e.getMessage();
+            	 StringBuilder type = new StringBuilder("attachment; filename=");
+                 type.append(filename + ".csv");
+                 try {
+                     response.setContentLength(result.length);
+                     response.setContentType("application/octet-stream");
+                     response.setHeader("Content-Disposition", type.toString());
+                     response.getOutputStream().write( result );
+                     
+                 } catch (IOException e) {
+                	 e.printStackTrace();
+                 }
+                 
+            } else {
+                
+    	    	request.setAttribute("toCSVErrorText", errorText);
+    	    	RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
+    	        try {
+    	           requestDispatcher.forward(request, response);
+    	        } catch (IOException | ServletException e) {
+    	        	e.printStackTrace();
+    	        }
             }
-         
+  
 	        
         }
         
-        if (errorText!=null) {
         
-	    	request.setAttribute("toCSVErrorText", errorText);
-	    	RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
-	        try {
-	           requestDispatcher.forward(request, response);
-	        } catch (IOException | ServletException e) {
-	        	e.printStackTrace();
-	        }
-        }
         
     }
 

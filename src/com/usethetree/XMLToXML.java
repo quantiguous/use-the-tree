@@ -47,7 +47,7 @@ public class XMLToXML extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         
     	
-        String errorText = null;			// we could also throw exceptions (instead of using(&tracking) this variable)
+        String errorText = null;			// track and trace an error-variable (old style :-))
         String contentType = null;
         try {
         	contentType = request.getContentType();
@@ -79,25 +79,21 @@ public class XMLToXML extends HttpServlet {
 				}
             }
 
-        	
         	Reference tmp = null;
+        	if (errorText==null) {
+	        	try {
+					tmp = Reference.createReferenceFromXML(in);
+				} catch (XMLStreamException e1) {
+					errorText = e1.getMessage();
+				}
+        	}
         	
-        	try {	
-				
-				tmp = Reference.createReferenceFromXML(in);
-				
-			} catch (XMLStreamException e1) {
-				errorText = e1.getMessage();
-			}
-        
         	final Reference outputRoot = new Reference("OutRoot");
             final Reference inputRoot = tmp;
         	
-
 	        if (errorText==null&&filename.startsWith("Identity")) {
 		   
 	        	outputRoot.firstChild = inputRoot.firstChild;
-
 	        
 	        } else if (errorText==null&&filename.startsWith("GroupBy1.IN")) {
 		        
@@ -155,49 +151,48 @@ public class XMLToXML extends HttpServlet {
 			
 	        } else if (errorText==null&&filename.startsWith("GroupBy3.IN")) {
 				
-			outputRoot.addChild("message").addChild("date").value = inputRoot.firstChild("message").firstChild("header").firstChild("date").value + " " + inputRoot.firstChild("message").firstChild("header").firstChild("time").value;
+				outputRoot.addChild("message").addChild("date").value = inputRoot.firstChild("message").firstChild("header").firstChild("date").value + " " + inputRoot.firstChild("message").firstChild("header").firstChild("time").value;
 				
-			Reference rOutOrder = outputRoot;
-			Reference rInOrder = inputRoot.firstChild("message").firstChild("orders").firstChild("order");
-			while (rInOrder!=null) {
+				Reference rOutOrder = outputRoot;
+				Reference rInOrder = inputRoot.firstChild("message").firstChild("orders").firstChild("order");
+				while (rInOrder!=null) {
 				
-				rOutOrder = rOutOrder.firstChild("message").addChild("orders").addChild("order");
-				rOutOrder.addChild("orderNumber").value = rInOrder.firstChild("orderNumber").value;
+					rOutOrder = rOutOrder.firstChild("message").addChild("orders").addChild("order");
+					rOutOrder.addChild("orderNumber").value = rInOrder.firstChild("orderNumber").value;
 				
-				Reference rOutPos = rOutOrder.addChild("positions");;
-				Reference rInPos = rInOrder.firstChild("positions").firstChild("position");
-				while (rInPos!=null) {
+					Reference rOutPos = rOutOrder.addChild("positions");;
+					Reference rInPos = rInOrder.firstChild("positions").firstChild("position");
+					while (rInPos!=null) {
 						
-					String groupBy = rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value;
+						String groupBy = rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value;
 						
-					rOutPos = rOutPos.set( groupBy, "position" );		// use hashmap (for grouping)
+						rOutPos = rOutPos.set( groupBy, "position" );		// use hashmap (for grouping)
 						
 	        			rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
 	        			rOutPos.set("batch").value = rInPos.firstChild("batch").value;
 	        			rOutPos.add("quantity", rInPos.firstChild("quantity").value);
 						
-					rOutPos = rOutPos.parent;
-		       			rInPos = rInPos.nextSibling;		
-				}
+						rOutPos = rOutPos.parent;
+		        		rInPos = rInPos.nextSibling;		
+					}
 					
-				rOutOrder = rOutOrder.parent;
-        			rInOrder = rInOrder.nextSibling;
-			}
+					rOutOrder = rOutOrder.parent;
+	        		rInOrder = rInOrder.nextSibling;
+				}
 	        	
 	      	
 	        } else
-	        	errorText = "Did not recognize file " + filename;
+	        	if (errorText==null)
+	        		errorText = "Did not recognize file " + filename;
 	        
 	        
 	        if (errorText==null) {
 	        
-
         		try {
 					Reference.writeXMLFromReference(outputRoot.firstChild , "Result_" + filename, response);
 				} catch (XMLStreamException | IOException e) {
 					e.printStackTrace();
 				}  
-        		
 	        
 	        	
 	        } else {
