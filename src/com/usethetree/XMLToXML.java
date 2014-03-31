@@ -45,57 +45,57 @@ public class XMLToXML extends HttpServlet {
 
    
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        
-    	
-        String errorText = null;			// track and trace an error-variable (old style :-))
-        String contentType = null;
-        try {
-        	contentType = request.getContentType();
-        } catch (Exception e) {
-        	errorText=e.getMessage();
-        }
-        
-        if (errorText==null&&contentType!=null&&contentType.indexOf("multipart/form-data")>=0) {       
-
-            String filename = "xml";
-            Part filePart = null;
-            try {
-                filePart = request.getPart("file");
-                filename = getFileName(filePart);
-            } catch (IOException e1) {
-                errorText = e1.getMessage();
-            } catch (ServletException e) {
-            	errorText = e.getMessage();
-            }
-            
-            InputStream in = null;
-            if (filename.isEmpty()) {
-            	 errorText = "No filename found. Please select a file";
-            } else {
+	    
+		
+	    String errorText = null;			// track and trace an error-variable (old style :-))
+	    String contentType = null;
+	    try {
+	    	contentType = request.getContentType();
+	    } catch (Exception e) {
+	    	errorText=e.getMessage();
+	    }
+	    
+	    if (errorText==null&&contentType!=null&&contentType.indexOf("multipart/form-data")>=0) {       
+	
+			String filename = "xml";
+			Part filePart = null;
+			try {
+			    filePart = request.getPart("file");
+			    filename = getFileName(filePart);
+			} catch (IOException e1) {
+			    errorText = e1.getMessage();
+			} catch (ServletException e) {
+				errorText = e.getMessage();
+			}
+			
+			InputStream in = null;
+			if (filename.isEmpty()) {
+				 errorText = "No filename found. Please select a file";
+			} else {
 				try {
 					in = filePart.getInputStream();
 				} catch (IOException e1) {
 					errorText = e1.getMessage();
 				}
-            }
-
-        	Reference tmp = null;
-        	if (errorText==null) {
-	        	try {
+			}
+			
+			Reference tmp = null;
+			if (errorText==null) {
+				try {
 					tmp = Reference.createReferenceFromXML(in);
 				} catch (XMLStreamException e1) {
 					errorText = e1.getMessage();
 				}
-        	}
-        	
-        	final Reference outputRoot = new Reference("OutRoot");
-            final Reference inputRoot = tmp;
-        	
-	        if (errorText==null&&filename.startsWith("Identity")) {
-		   
-	        	outputRoot.firstChild = inputRoot.firstChild;
-	        
-	        } else if (errorText==null&&filename.startsWith("GroupBy1.IN")) {
+			}
+			
+			final Reference outputRoot = new Reference("OutRoot");
+			final Reference inputRoot = tmp;
+			
+			if (errorText==null&&filename.startsWith("Identity")) {
+			   
+			    	outputRoot.firstChild = inputRoot.firstChild;
+			    
+			} else if (errorText==null&&filename.startsWith("GroupBy1.IN")) {
 		        
 				Reference rInPosition = inputRoot.firstChild.firstChild;    // message.header
 				Reference rOutPos = outputRoot.addChild("msg");
@@ -105,7 +105,8 @@ public class XMLToXML extends HttpServlet {
 				rInPosition = rInPosition.firstChild("positions").firstChild("position");
 				while (rInPosition!=null) {
 					
-					rOutPos = rOutPos.set( rInPosition.firstChild("materialNumber").value, "item" );		// use hashmap (for grouping)
+					// use hashmap (for grouping)
+					rOutPos = rOutPos.set( rInPosition.firstChild("materialNumber").value, "item" );		
 					       			
 					rOutPos.set("MATNR").value = rInPosition.firstChild("materialNumber").value;
 					rOutPos.add("QTY", rInPosition.firstChild("quantity").value);
@@ -113,9 +114,9 @@ public class XMLToXML extends HttpServlet {
 					rOutPos = rOutPos.parent;
 					rInPosition = rInPosition.nextSibling;
 				}
-	        
-	        } else if (errorText==null&&filename.startsWith("GroupBy2.IN")) {
-	       	    
+			
+			} else if (errorText==null&&filename.startsWith("GroupBy2.IN")) {
+			    
 				Reference rOutOrder = outputRoot.addChild("message").addChild("order");
 				Reference rInOrder = inputRoot.firstChild("message").firstChild("order");
 				while (rInOrder!=null) {
@@ -123,7 +124,8 @@ public class XMLToXML extends HttpServlet {
 					Reference rInPos = rInOrder.firstChild("position");
 					while(rInPos!=null) {
 				  
-						rOutPos = rOutPos.set( rInPos.firstChild("materialNumber").value, "position" );		// use hashmap (for grouping)
+						// use hashmap (for grouping)
+						rOutPos = rOutPos.set( rInPos.firstChild("materialNumber").value, "position" );		
 						
 						rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
 						rOutPos.add("quantity", rInPos.firstChild("quantity").value);
@@ -131,8 +133,9 @@ public class XMLToXML extends HttpServlet {
 						Reference rOutSubPos = rOutPos;
 						Reference rInSubPos = rInPos.firstChild("subPos");
 						while (rInSubPos!=null) {
-						
-							rOutSubPos = rOutSubPos.set(rInSubPos.firstChild("batch").value, "subPos");		// use hashmap (for grouping)
+			
+							// use hashmap (for grouping)
+							rOutSubPos = rOutSubPos.set(rInSubPos.firstChild("batch").value, "subPos");
 							
 							rOutSubPos.set("batch").value = rInSubPos.firstChild("batch").value;
 							rOutSubPos.add("quantity", rInSubPos.firstChild("quantity").value);
@@ -149,14 +152,14 @@ public class XMLToXML extends HttpServlet {
 					rInOrder = rInOrder.nextSibling;
 				}
 			
-	        } else if (errorText==null&&filename.startsWith("GroupBy3.IN")) {
+			} else if (errorText==null&&filename.startsWith("GroupBy3.IN")) {
 				
 				outputRoot.addChild("message").addChild("date").value = inputRoot.firstChild("message").firstChild("header").firstChild("date").value + " " + inputRoot.firstChild("message").firstChild("header").firstChild("time").value;
 				
 				Reference rOutOrder = outputRoot;
 				Reference rInOrder = inputRoot.firstChild("message").firstChild("orders").firstChild("order");
 				while (rInOrder!=null) {
-				
+					
 					rOutOrder = rOutOrder.firstChild("message").addChild("orders").addChild("order");
 					rOutOrder.addChild("orderNumber").value = rInOrder.firstChild("orderNumber").value;
 				
@@ -164,9 +167,8 @@ public class XMLToXML extends HttpServlet {
 					Reference rInPos = rInOrder.firstChild("positions").firstChild("position");
 					while (rInPos!=null) {
 						
-						String groupBy = rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value;
-						
-						rOutPos = rOutPos.set( groupBy, "position" );		// use hashmap (for grouping)
+						// use hashmap (for *composite* grouping)
+						rOutPos = rOutPos.set( rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value, "position" );
 						
 						rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
 						rOutPos.set("batch").value = rInPos.firstChild("batch").value;
@@ -179,35 +181,35 @@ public class XMLToXML extends HttpServlet {
 					rOutOrder = rOutOrder.parent;
 					rInOrder = rInOrder.nextSibling;
 				}
-	        	
-	      	
-	        } else
-	        	if (errorText==null)
-	        		errorText = "Did not recognize file " + filename;
-	        
-	        
-	        if (errorText==null) {
-	        
-        		try {
+				
+			
+			} else
+				if (errorText==null)
+					errorText = "Did not find transformation code for " + filename + ". You have to code your transformation IN JAVA first ;-).";
+			
+			
+			if (errorText==null) {
+			
+				try {
 					Reference.writeXMLFromReference(outputRoot.firstChild , "Result_" + filename, response);
 				} catch (XMLStreamException | IOException e) {
 					e.printStackTrace();
 				}  
-	        
-	        	
-	        } else {
-	        	
-	        	request.setAttribute("errorText", errorText);
-	        	RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
-	            try {
-	               requestDispatcher.forward(request, response);
-	            } catch (IOException | ServletException e) {
-	            	e.printStackTrace();
-	            }
-	        }    
-        }
-        
-    }
+			
+				
+			} else {
+				
+				request.setAttribute("errorText", errorText);
+				RequestDispatcher requestDispatcher = request.getRequestDispatcher("/index.jsp");
+			    try {
+			       requestDispatcher.forward(request, response);
+			    } catch (IOException | ServletException e) {
+			    	e.printStackTrace();
+			    }
+			}
+		}
+	    
+	}
 
     
     private String getFileName(final Part part) {
