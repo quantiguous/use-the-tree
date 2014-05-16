@@ -141,7 +141,7 @@ public class XMLToXML extends HttpServlet {
 							rOutSubPos.add("quantity", rInSubPos.firstChild("quantity").value);
 				
 							rOutSubPos = rOutSubPos.parent;
-				    		rInSubPos = rInSubPos.nextSibling;
+				    			rInSubPos = rInSubPos.nextSibling;
 						}
 						
 						rOutPos = rOutPos.parent;
