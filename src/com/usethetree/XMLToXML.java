@@ -80,9 +80,9 @@ public class XMLToXML extends HttpServlet {
 			}
 			
 			Reference tmp = null;
-			if (errorText==null) {
+			if (errorText==null&&filename.endsWith(".xml")) {
 				try {
-					tmp = Reference.createReferenceFromXML(in);
+					tmp = Reference.createLogicalMsgTreeFromXML(in);
 				} catch (XMLStreamException e1) {
 					errorText = e1.getMessage();
 				}
@@ -105,7 +105,7 @@ public class XMLToXML extends HttpServlet {
 				rInPosition = rInPosition.firstChild("positions").firstChild("position");
 				while (rInPosition!=null) {
 					
-					// use hashmap (for grouping)
+					// use hash map (for grouping)
 					rOutPos = rOutPos.set( rInPosition.firstChild("materialNumber").value, "item" );		
 					       			
 					rOutPos.set("MATNR").value = rInPosition.firstChild("materialNumber").value;
@@ -124,7 +124,7 @@ public class XMLToXML extends HttpServlet {
 					Reference rInPos = rInOrder.firstChild("position");
 					while(rInPos!=null) {
 				  
-						// use hashmap (for grouping)
+						// use hash map (for grouping)
 						rOutPos = rOutPos.set( rInPos.firstChild("materialNumber").value, "position" );		
 						
 						rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
@@ -134,14 +134,14 @@ public class XMLToXML extends HttpServlet {
 						Reference rInSubPos = rInPos.firstChild("subPos");
 						while (rInSubPos!=null) {
 			
-							// use hashmap (for grouping)
+							// use hash map (for grouping)
 							rOutSubPos = rOutSubPos.set(rInSubPos.firstChild("batch").value, "subPos");
 							
 							rOutSubPos.set("batch").value = rInSubPos.firstChild("batch").value;
 							rOutSubPos.add("quantity", rInSubPos.firstChild("quantity").value);
-				
+							
 							rOutSubPos = rOutSubPos.parent;
-				    			rInSubPos = rInSubPos.nextSibling;
+							rInSubPos = rInSubPos.nextSibling;
 						}
 						
 						rOutPos = rOutPos.parent;
@@ -167,7 +167,7 @@ public class XMLToXML extends HttpServlet {
 					Reference rInPos = rInOrder.firstChild("positions").firstChild("position");
 					while (rInPos!=null) {
 						
-						// use hashmap (for *composite* grouping)
+						// use hash map (for *composite* grouping)
 						rOutPos = rOutPos.set( rInPos.firstChild("materialNumber").value + "_" + rInPos.firstChild("batch").value, "position" );
 						
 						rOutPos.set("materialNumber").value = rInPos.firstChild("materialNumber").value;
@@ -182,7 +182,17 @@ public class XMLToXML extends HttpServlet {
 					rInOrder = rInOrder.nextSibling;
 				}
 				
-			
+			} else if (errorText==null&&filename.startsWith("EDI_Edifact")) {
+				
+				try {
+					tmp = Reference.createLogicalMsgTreeFromEDIEdifact(in);
+				} catch (Exception e1) {
+					errorText = e1.getMessage();
+				}
+				filename = filename.replace(".txt", "") + ".xml";
+				
+				outputRoot.firstChild = tmp.firstChild;
+				
 			} else
 				if (errorText==null)
 					errorText = "Did not find transformation code for " + filename + ". You have to code your transformation IN JAVA first ;-).";
@@ -191,7 +201,7 @@ public class XMLToXML extends HttpServlet {
 			if (errorText==null) {
 			
 				try {
-					Reference.writeXMLFromReference(outputRoot.firstChild , "Result_" + filename, response);
+					Reference.writeXMLFromLogicalMsgTree(outputRoot.firstChild , "Result_" + filename, response);
 				} catch (XMLStreamException | IOException e) {
 					e.printStackTrace();
 				}  
