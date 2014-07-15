@@ -19,6 +19,7 @@ package com.usethetree;
 
 import java.io.IOException;
 import java.io.InputStream;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -46,6 +47,9 @@ public class XMLToXML extends HttpServlet {
    
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) {
 	    
+		
+		int verbosity = Integer.parseInt(request.getParameter("verbosity"));
+        boolean strict = request.getParameter("strict")!=null?true:false;
 		
 	    String errorText = null;			// track and trace an error-variable (old style :-))
 	    String contentType = null;
@@ -185,7 +189,7 @@ public class XMLToXML extends HttpServlet {
 			} else if (errorText==null&&filename.startsWith("EDI_Edifact")) {
 				
 				try {
-					tmp = Reference.createLogicalMsgTreeFromEDIEdifact(in);
+					tmp = Reference.createLogicalMsgTreeFromEDIEdifact(in, verbosity, strict);
 				} catch (Exception e1) {
 					errorText = e1.getMessage();
 				}
