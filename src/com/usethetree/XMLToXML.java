@@ -49,7 +49,7 @@ public class XMLToXML extends HttpServlet {
 	    
 		
 		int verbosity = Integer.parseInt(request.getParameter("verbosity"));
-        boolean strict = request.getParameter("strict")!=null?true:false;
+		boolean strict = request.getParameter("strict")!=null?true:false;
 		
 	    String errorText = null;			// track and trace an error-variable (old style :-))
 	    String contentType = null;
@@ -186,7 +186,7 @@ public class XMLToXML extends HttpServlet {
 					rInOrder = rInOrder.nextSibling;
 				}
 				
-			} else if (errorText==null&&filename.startsWith("EDI_Edifact")) {
+			} else if (errorText==null&&(filename.toLowerCase().contains("edifact")||filename.toLowerCase().contains("edi"))) {
 				
 				try {
 					tmp = Reference.createLogicalMsgTreeFromEDIEdifact(in, verbosity, strict);
